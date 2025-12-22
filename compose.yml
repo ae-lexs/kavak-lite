@@ -1,13 +1,12 @@
 services:
   api:
+    environment:
+      PYTHONPATH: /app/src
     build:
       context: .
       dockerfile: docker/dev.Dockerfile
     ports:
       - "8000:8000"
     volumes:
-      - ./src:/app/src
-      - ./tests:/app/tests
-      - ./pyproject.toml:/app/pyproject.toml
-      - ./uv.lock:/app/uv.lock
+      - ./:/app
 

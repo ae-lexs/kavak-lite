@@ -33,3 +33,13 @@ disallow_untyped_defs = true
 no_implicit_optional = true
 strict = true
 
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+

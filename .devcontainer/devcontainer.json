@@ -1,0 +1,31 @@
+{
+  "name": "kavak-lite (devcontainer)",
+  "dockerComposeFile": [
+    "../compose.yml",
+    "compose.dev.yml"
+  ],
+  "service": "api",
+  "workspaceFolder": "/app",
+  "overrideCommand": true,
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "python.defaultInterpreterPath": "/app/.venv/bin/python",
+        "python.testing.pytestEnabled": true,
+        "python.testing.pytestPath": "/app/.venv/bin/pytest",
+        "python.testing.pytestArgs": ["tests"],
+        "ruff.path": ["/app/.venv/bin/ruff"]
+      },
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff",
+        "ms-python.mypy-type-checker"
+      ]
+    }
+  },
+
+  "postCreateCommand": "uv sync --frozen",
+  "remoteUser": "root",
+  "forwardPorts": [8000]
+}

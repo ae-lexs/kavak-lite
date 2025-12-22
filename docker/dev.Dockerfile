@@ -12,7 +12,8 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     UV_COMPILE_BYTECODE=1 \
-    UV_LINK_MODE=copy
+    UV_LINK_MODE=copy \
+    PYTHONPATH=/app/src
 
 # 1) Install dependencies in a cached layer (only lock + pyproject copied)
 COPY pyproject.toml uv.lock ./
@@ -26,5 +27,5 @@ RUN uv sync --frozen
 
 EXPOSE 8000
 
-CMD ["uv", "run", "uvicorn", "src.entrypoints.http.app:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uv", "run", "uvicorn", "kavak_lite.entrypoints.http.app:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 

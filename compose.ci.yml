@@ -1,0 +1,6 @@
+services:
+  api:
+    volumes: []          # sin bind mounts en CI
+    ports: []            # no necesitamos exponer puertos en CI
+    environment:
+      PYTHONPATH: /app/src

@@ -15,7 +15,7 @@ No local Python installation is required.
 
 ## Development Environment
 
-This project is **Docker-first** and integrates seamlessly with **VSCode Dev Containers**.
+This project is **Docker-first** and integrates seamlessly with **[VSCode Dev Containers](https://code.visualstudio.com/docs/devcontainers/containers)**.
 
 When using VSCode with the *Dev Containers* extension:
 
@@ -91,7 +91,7 @@ The `Makefile` provides a consistent and ergonomic interface.
 
 ## Dependency Management
 
-Dependencies are managed with **uv** and fully locked.
+Dependencies are managed with **[uv](https://docs.astral.sh/uv/)** and fully locked.
 
 Workflow:
 

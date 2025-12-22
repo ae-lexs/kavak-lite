@@ -14,8 +14,8 @@ ANNUAL_INTEREST_RATE = 0.10
 
 @dataclass(frozen=True, slots=True)
 class FinancingRequest:
-    price: int
-    down_payment: int
+    price: float
+    down_payment: float
     term_months: int
 
     def validate(self) -> None:
@@ -31,7 +31,7 @@ class FinancingRequest:
 
 @dataclass(frozen=True, slots=True)
 class FinancingPlan:
-    principal: int
+    principal: float
     annual_rate: float
     term_months: int
     monthly_payment: float

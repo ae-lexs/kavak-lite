@@ -1,6 +1,6 @@
 SHELL := /bin/sh
 
-.PHONY: help build up down logs ps sh lock sync test lint lint_fix typecheck fmt check clean
+.PHONY: help build up down logs ps sh lock sync test test_file lint lint_fix typecheck fmt check clean
 
 help:
 	@echo "kavak-lite commands:"
@@ -12,7 +12,8 @@ help:
 	@echo "  make sh          Shell inside api container"
 	@echo "  make lock        Generate/update uv.lock"
 	@echo "  make sync        Install deps from lock (frozen)"
-	@echo "  make test        Run tests"
+	@echo "  make test        Run all tests"
+	@echo "  make test_file   Run specific test file (FILE=path/to/test.py)"
 	@echo "  make lint        Ruff check"
 	@echo "  make lint_fix    Ruff check and fix"
 	@echo "  make fmt         Ruff format"
@@ -46,6 +47,13 @@ sync:
 
 test:
 	docker compose run --rm api uv run pytest
+
+test_file:
+	@if [ -z "$(FILE)" ]; then \
+		echo "Error: FILE parameter required. Usage: make test_file FILE=path/to/test.py"; \
+		exit 1; \
+	fi
+	docker compose run --rm api uv run pytest $(FILE) -v
 
 lint:
 	docker compose run --rm api uv run ruff check .

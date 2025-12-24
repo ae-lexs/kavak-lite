@@ -7,7 +7,8 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 
 # IMPORTANT: import your Base + models so metadata is populated
-from kavak_lite.infra.db.models.base import Base  # noqa
+from kavak_lite.infra.db.models.base import Base
+from kavak_lite.infra.db.models import CarRow  # noqa: F401
 
 
 config = context.config

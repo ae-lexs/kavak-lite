@@ -1,6 +1,6 @@
 SHELL := /bin/sh
 
-.PHONY: help build up down logs ps sh lock sync test test_file lint lint_fix typecheck fmt check clean
+.PHONY: help build up down logs ps sh lock sync test test_file lint lint_fix typecheck fmt check clean db-status db-history db-up db-down db-base db-new db-sql
 
 help:
 	@echo "kavak-lite commands:"
@@ -20,6 +20,15 @@ help:
 	@echo "  make typecheck   Mypy strict typecheck"
 	@echo "  make check       Lint + typecheck + test"
 	@echo "  make clean       Remove containers/volumes (careful)"
+	@echo ""
+	@echo "Database commands:"
+	@echo "  make db-status   Show current revision and heads"
+	@echo "  make db-history  Show migration history (verbose)"
+	@echo "  make db-up       Upgrade to latest migration"
+	@echo "  make db-down     Downgrade one migration"
+	@echo "  make db-base     Downgrade to base (empty DB)"
+	@echo "  make db-new      Create new migration (autogenerate)"
+	@echo "  make db-sql      Show SQL for upgrade (dry-run)"
 
 build:
 	docker compose build
@@ -71,3 +80,27 @@ check: lint typecheck test
 
 clean:
 	docker compose down -v
+
+db-status:
+	@docker compose run --rm api uv run alembic current
+	@echo ""
+	@docker compose run --rm api uv run alembic heads
+
+db-history:
+	docker compose run --rm api uv run alembic history --verbose
+
+db-up:
+	docker compose run --rm api uv run alembic upgrade head
+
+db-down:
+	docker compose run --rm api uv run alembic downgrade -1
+
+db-base:
+	docker compose run --rm api uv run alembic downgrade base
+
+db-new:
+	@read -p "Migration message: " msg; \
+	docker compose run --rm api uv run alembic revision --autogenerate -m "$$msg"
+
+db-sql:
+	docker compose run --rm api uv run alembic upgrade head --sql

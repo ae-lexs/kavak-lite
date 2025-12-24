@@ -24,7 +24,9 @@ class CarRow(Base):
     trim: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
     year: Mapped[int] = mapped_column(Integer, nullable=False)
-    price: Mapped[Decimal] = mapped_column(Numeric(precision=12, scale=2), nullable=False)  # $9,999,999,999.99
+    price: Mapped[Decimal] = mapped_column(
+        Numeric(precision=12, scale=2), nullable=False
+    )  # $9,999,999,999.99
 
     milleage_km: Mapped[int | None] = mapped_column(Integer, nullable=True)
     transmission: Mapped[str | None] = mapped_column(String(20), nullable=True)

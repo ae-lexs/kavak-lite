@@ -90,6 +90,52 @@ The `Makefile` provides a consistent and ergonomic interface.
 
 ---
 
+## Database
+
+The project uses **PostgreSQL** with **Alembic** for schema migrations.
+
+### Quick Start
+
+1. **Start the Postgres service:**
+   ```bash
+   docker compose up -d postgres
+   ```
+
+2. **Run migrations to set up the schema:**
+   ```bash
+   make db-up
+   ```
+
+3. **Check migration status:**
+   ```bash
+   make db-status
+   ```
+
+### Database Commands
+
+| Command | Description |
+|---------|-------------|
+| `make db-status` | Show current revision and heads |
+| `make db-history` | Show migration history (verbose) |
+| `make db-up` | Upgrade to latest migration |
+| `make db-down` | Downgrade one migration |
+| `make db-base` | Downgrade to base (empty DB) |
+| `make db-new` | Create new migration (autogenerate) |
+| `make db-sql` | Show SQL for upgrade (dry-run) |
+
+### Connection Details
+
+Local development (outside Docker):
+```
+DATABASE_URL=postgresql+psycopg://kavak:kavak@localhost:5432/kavak_lite
+```
+
+Inside Docker containers, the hostname is `postgres` instead of `localhost`.
+
+The `.env.example` file contains the connection string for local development.
+
+---
+
 ## Dependency Management
 
 Dependencies are managed with **[uv](https://docs.astral.sh/uv/)** and fully locked.

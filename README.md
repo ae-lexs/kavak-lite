@@ -100,7 +100,7 @@ Workflow:
 make lock
 make sync
 git add pyproject.toml uv.lock
-git commit -m "deps: update dependencies"
+git commit -m "update dependencies"
 ```
 
 All environments (local, CI, production) install dependencies strictly from the lockfile.

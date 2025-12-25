@@ -1,6 +1,6 @@
 SHELL := /bin/sh
 
-.PHONY: help build up down logs ps sh lock sync test test_file lint lint_fix typecheck fmt check clean
+.PHONY: help build up down logs ps sh lock sync test test-file lint lint-fix typecheck fmt check clean db-status db-history db-up db-down db-base db-new db-sql db-shell
 
 help:
 	@echo "kavak-lite commands:"
@@ -13,13 +13,23 @@ help:
 	@echo "  make lock        Generate/update uv.lock"
 	@echo "  make sync        Install deps from lock (frozen)"
 	@echo "  make test        Run all tests"
-	@echo "  make test_file   Run specific test file (FILE=path/to/test.py)"
+	@echo "  make test-file   Run specific test file (FILE=path/to/test.py)"
 	@echo "  make lint        Ruff check"
-	@echo "  make lint_fix    Ruff check and fix"
+	@echo "  make lint-fix    Ruff check and fix"
 	@echo "  make fmt         Ruff format"
 	@echo "  make typecheck   Mypy strict typecheck"
 	@echo "  make check       Lint + typecheck + test"
 	@echo "  make clean       Remove containers/volumes (careful)"
+	@echo ""
+	@echo "Database commands:"
+	@echo "  make db-status   Show current revision and heads"
+	@echo "  make db-history  Show migration history (verbose)"
+	@echo "  make db-up       Upgrade to latest migration"
+	@echo "  make db-down     Downgrade one migration"
+	@echo "  make db-base     Downgrade to base (empty DB)"
+	@echo "  make db-new      Create new migration (autogenerate)"
+	@echo "  make db-sql      Show SQL for upgrade (dry-run)"
+	@echo "  make db-shell    Open psql shell in postgres container"
 
 build:
 	docker compose build
@@ -48,9 +58,9 @@ sync:
 test:
 	docker compose run --rm api uv run pytest
 
-test_file:
+test-file:
 	@if [ -z "$(FILE)" ]; then \
-		echo "Error: FILE parameter required. Usage: make test_file FILE=path/to/test.py"; \
+		echo "Error: FILE parameter required. Usage: make test-file FILE=path/to/test.py"; \
 		exit 1; \
 	fi
 	docker compose run --rm api uv run pytest $(FILE) -v
@@ -58,7 +68,7 @@ test_file:
 lint:
 	docker compose run --rm api uv run ruff check .
 
-lint_fix:
+lint-fix:
 	docker compose run --rm api uv run ruff check --fix .
 
 fmt:
@@ -71,3 +81,30 @@ check: lint typecheck test
 
 clean:
 	docker compose down -v
+
+db-status:
+	@docker compose run --rm api uv run alembic current
+	@echo ""
+	@docker compose run --rm api uv run alembic heads
+
+db-history:
+	docker compose run --rm api uv run alembic history --verbose
+
+db-up:
+	docker compose run --rm api uv run alembic upgrade head
+
+db-down:
+	docker compose run --rm api uv run alembic downgrade -1
+
+db-base:
+	docker compose run --rm api uv run alembic downgrade base
+
+db-new:
+	@read -p "Migration message: " msg; \
+	docker compose run --rm api uv run alembic revision --autogenerate -m "$$msg"
+
+db-sql:
+	docker compose run --rm api uv run alembic upgrade head --sql
+
+db-shell:
+	docker compose exec postgres psql -U kavak -d kavak_lite

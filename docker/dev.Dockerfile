@@ -13,7 +13,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
+    UV_NO_CACHE=1 \
     PYTHONPATH=/app/src
+
+# Create non-root user
+RUN groupadd -r appuser && useradd -r -g appuser appuser
 
 # 1) Install dependencies in a cached layer (only lock + pyproject copied)
 COPY pyproject.toml uv.lock ./
@@ -25,7 +29,28 @@ COPY src ./src
 COPY tests ./tests
 RUN uv sync --frozen
 
+# Copy Alembic configuration and migrations
+COPY alembic.ini .
+COPY alembic/ ./alembic/
+
+# Copy and set up migration script
+COPY scripts/run_migrations.sh /run_migrations.sh
+RUN chmod +x /run_migrations.sh
+
+# Change ownership to non-root user
+RUN chown -R appuser:appuser /app /run_migrations.sh
+
+# Switch to non-root user
+USER appuser
+
 EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"
+
+# Set entrypoint to run migrations before starting the app
+ENTRYPOINT ["/run_migrations.sh"]
 
 CMD ["uv", "run", "uvicorn", "kavak_lite.entrypoints.http.app:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 

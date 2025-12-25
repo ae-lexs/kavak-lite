@@ -33,7 +33,7 @@ def financing_plan(payload: FinancingPayload) -> dict[str, int | float]:
         )
     except InvalidFinancingInput as e:
         raise HTTPException(status_code=400, detail=str(e))
-    
+
     return {
         "principal": plan.principal,
         "annual_rate": plan.annual_rate,

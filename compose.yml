@@ -1,7 +1,26 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: kavak_lite_postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: kavak_lite
+      POSTGRES_USER: kavak
+      POSTGRES_PASSWORD: kavak
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kavak -d kavak_lite"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
   api:
     environment:
       PYTHONPATH: /app/src
+      DATABASE_URL: postgresql+psycopg://kavak:kavak@postgres:5432/kavak_lite
     build:
       context: .
       dockerfile: docker/dev.Dockerfile
@@ -9,4 +28,10 @@ services:
       - "8000:8000"
     volumes:
       - ./:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
 

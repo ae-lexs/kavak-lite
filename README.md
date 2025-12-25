@@ -80,9 +80,9 @@ The `Makefile` provides a consistent and ergonomic interface.
 | `make lock` | Generate or update `uv.lock` |
 | `make sync` | Install dependencies from lockfile (frozen) |
 | `make test` | Run all tests |
-| `make test_file FILE=path/to/test.py` | Run specific test file with verbose output |
+| `make test-file FILE=path/to/test.py` | Run specific test file with verbose output |
 | `make lint` | Run Ruff checks |
-| `make lint_fix` | Run Ruff checks and fix |
+| `make lint-fix` | Run Ruff checks and fix |
 | `make fmt` | Auto-format with Ruff |
 | `make typecheck` | Run MyPy (strict) |
 | `make check` | Run lint + typecheck + tests |
@@ -122,6 +122,7 @@ The project uses **PostgreSQL** with **Alembic** for schema migrations.
 | `make db-base` | Downgrade to base (empty DB) |
 | `make db-new` | Create new migration (autogenerate) |
 | `make db-sql` | Show SQL for upgrade (dry-run) |
+| `make db-shell` | Open psql shell in postgres container |
 
 ### Connection Details
 

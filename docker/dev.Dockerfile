@@ -13,6 +13,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
+    UV_NO_CACHE=1 \
     PYTHONPATH=/app/src
 
 # Create non-root user
@@ -31,10 +32,6 @@ RUN uv sync --frozen
 # Copy Alembic configuration and migrations
 COPY alembic.ini .
 COPY alembic/ ./alembic/
-
-# Copy and set up migration script
-COPY scripts/run_migrations.sh /run_migrations.sh
-RUN chmod +x /run_migrations.sh
 
 # Copy and set up migration script
 COPY scripts/run_migrations.sh /run_migrations.sh

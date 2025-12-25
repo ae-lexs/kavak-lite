@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 import pytest
 
 from kavak_lite.domain.financing import FinancingRequest, InvalidFinancingInput
@@ -12,7 +14,7 @@ from kavak_lite.use_cases.calculate_financing_plan import CalculateFinancingPlan
 def test_rejects_zero_price():
     """Price must be greater than zero."""
     uc = CalculateFinancingPlan()
-    req = FinancingRequest(price=0, down_payment=0, term_months=36)
+    req = FinancingRequest(price=Decimal("0"), down_payment=Decimal("0"), term_months=36)
 
     with pytest.raises(InvalidFinancingInput, match="price must be > 0"):
         uc.execute(req)
@@ -21,7 +23,7 @@ def test_rejects_zero_price():
 def test_rejects_negative_price():
     """Price cannot be negative."""
     uc = CalculateFinancingPlan()
-    req = FinancingRequest(price=-100_000, down_payment=0, term_months=36)
+    req = FinancingRequest(price=Decimal("-100000"), down_payment=Decimal("0"), term_months=36)
 
     with pytest.raises(InvalidFinancingInput, match="price must be > 0"):
         uc.execute(req)
@@ -30,7 +32,7 @@ def test_rejects_negative_price():
 def test_rejects_negative_down_payment():
     """Down payment cannot be negative."""
     uc = CalculateFinancingPlan()
-    req = FinancingRequest(price=100_000, down_payment=-10_000, term_months=36)
+    req = FinancingRequest(price=Decimal("100000"), down_payment=Decimal("-10000"), term_months=36)
 
     with pytest.raises(InvalidFinancingInput, match="down_payment must be >= 0"):
         uc.execute(req)
@@ -39,7 +41,7 @@ def test_rejects_negative_down_payment():
 def test_rejects_down_payment_equal_to_price():
     """Down payment must be less than price (some amount must be financed)."""
     uc = CalculateFinancingPlan()
-    req = FinancingRequest(price=100_000, down_payment=100_000, term_months=36)
+    req = FinancingRequest(price=Decimal("100000"), down_payment=Decimal("100000"), term_months=36)
 
     with pytest.raises(InvalidFinancingInput, match="down_payment must be < price"):
         uc.execute(req)
@@ -48,7 +50,7 @@ def test_rejects_down_payment_equal_to_price():
 def test_rejects_down_payment_exceeding_price():
     """Down payment cannot exceed price."""
     uc = CalculateFinancingPlan()
-    req = FinancingRequest(price=100_000, down_payment=150_000, term_months=36)
+    req = FinancingRequest(price=Decimal("100000"), down_payment=Decimal("150000"), term_months=36)
 
     with pytest.raises(InvalidFinancingInput, match="down_payment must be < price"):
         uc.execute(req)
@@ -57,7 +59,7 @@ def test_rejects_down_payment_exceeding_price():
 def test_rejects_term_24_months():
     """24 months is not an allowed term."""
     uc = CalculateFinancingPlan()
-    req = FinancingRequest(price=100_000, down_payment=10_000, term_months=24)
+    req = FinancingRequest(price=Decimal("100000"), down_payment=Decimal("10000"), term_months=24)
 
     with pytest.raises(InvalidFinancingInput, match="term_months must be one of"):
         uc.execute(req)
@@ -66,7 +68,7 @@ def test_rejects_term_24_months():
 def test_rejects_term_zero():
     """Zero months is not an allowed term."""
     uc = CalculateFinancingPlan()
-    req = FinancingRequest(price=100_000, down_payment=10_000, term_months=0)
+    req = FinancingRequest(price=Decimal("100000"), down_payment=Decimal("10000"), term_months=0)
 
     with pytest.raises(InvalidFinancingInput, match="term_months must be one of"):
         uc.execute(req)
@@ -75,7 +77,7 @@ def test_rejects_term_zero():
 def test_rejects_negative_term():
     """Negative months is not an allowed term."""
     uc = CalculateFinancingPlan()
-    req = FinancingRequest(price=100_000, down_payment=10_000, term_months=-36)
+    req = FinancingRequest(price=Decimal("100000"), down_payment=Decimal("10000"), term_months=-36)
 
     with pytest.raises(InvalidFinancingInput, match="term_months must be one of"):
         uc.execute(req)
@@ -89,48 +91,48 @@ def test_rejects_negative_term():
 def test_accepts_term_36_months():
     """36 months is a valid term."""
     uc = CalculateFinancingPlan()
-    req = FinancingRequest(price=100_000, down_payment=20_000, term_months=36)
+    req = FinancingRequest(price=Decimal("100000"), down_payment=Decimal("20000"), term_months=36)
 
     plan = uc.execute(req)
 
     assert plan.term_months == 36
-    assert plan.principal == 80_000
+    assert plan.principal == Decimal("80000")
     assert plan.monthly_payment > 0
 
 
 def test_accepts_term_48_months():
     """48 months is a valid term."""
     uc = CalculateFinancingPlan()
-    req = FinancingRequest(price=100_000, down_payment=20_000, term_months=48)
+    req = FinancingRequest(price=Decimal("100000"), down_payment=Decimal("20000"), term_months=48)
 
     plan = uc.execute(req)
 
     assert plan.term_months == 48
-    assert plan.principal == 80_000
+    assert plan.principal == Decimal("80000")
     assert plan.monthly_payment > 0
 
 
 def test_accepts_term_60_months():
     """60 months is a valid term."""
     uc = CalculateFinancingPlan()
-    req = FinancingRequest(price=100_000, down_payment=20_000, term_months=60)
+    req = FinancingRequest(price=Decimal("100000"), down_payment=Decimal("20000"), term_months=60)
 
     plan = uc.execute(req)
 
     assert plan.term_months == 60
-    assert plan.principal == 80_000
+    assert plan.principal == Decimal("80000")
     assert plan.monthly_payment > 0
 
 
 def test_accepts_term_72_months():
     """72 months is a valid term."""
     uc = CalculateFinancingPlan()
-    req = FinancingRequest(price=100_000, down_payment=20_000, term_months=72)
+    req = FinancingRequest(price=Decimal("100000"), down_payment=Decimal("20000"), term_months=72)
 
     plan = uc.execute(req)
 
     assert plan.term_months == 72
-    assert plan.principal == 80_000
+    assert plan.principal == Decimal("80000")
     assert plan.monthly_payment > 0
 
 
@@ -142,11 +144,11 @@ def test_accepts_term_72_months():
 def test_accepts_zero_down_payment():
     """Zero down payment is valid - finance the entire price."""
     uc = CalculateFinancingPlan()
-    req = FinancingRequest(price=100_000, down_payment=0, term_months=36)
+    req = FinancingRequest(price=Decimal("100000"), down_payment=Decimal("0"), term_months=36)
 
     plan = uc.execute(req)
 
-    assert plan.principal == 100_000
+    assert plan.principal == Decimal("100000")
     assert plan.monthly_payment > 0
     assert plan.total_paid > plan.principal
 
@@ -154,22 +156,22 @@ def test_accepts_zero_down_payment():
 def test_small_down_payment():
     """Very small down payment should work correctly."""
     uc = CalculateFinancingPlan()
-    req = FinancingRequest(price=100_000, down_payment=100, term_months=36)
+    req = FinancingRequest(price=Decimal("100000"), down_payment=Decimal("100"), term_months=36)
 
     plan = uc.execute(req)
 
-    assert plan.principal == 99_900
+    assert plan.principal == Decimal("99900")
     assert plan.monthly_payment > 0
 
 
 def test_down_payment_just_below_price():
     """Down payment can be very close to price (minimal financing)."""
     uc = CalculateFinancingPlan()
-    req = FinancingRequest(price=100_000, down_payment=99_999, term_months=36)
+    req = FinancingRequest(price=Decimal("100000"), down_payment=Decimal("99999"), term_months=36)
 
     plan = uc.execute(req)
 
-    assert plan.principal == 1
+    assert plan.principal == Decimal("1")
     assert plan.monthly_payment > 0
     assert plan.total_interest >= 0  # Tiny principal, minimal interest
 
@@ -188,28 +190,27 @@ def test_calculates_correct_monthly_payment_with_standard_rate():
 
     Where:
     - P = principal (100,000)
-    - r = monthly rate (0.10 / 12 = 0.008333...)
+    - r = monthly rate (0.10 / 12)
     - n = number of months (36)
 
-    Expected monthly payment ≈ 3,226.72
+    Expected monthly payment = $3,226.72 (rounded to cents)
     """
     uc = CalculateFinancingPlan()  # Uses default 10% annual rate
-    req = FinancingRequest(price=100_000, down_payment=0, term_months=36)
+    req = FinancingRequest(price=Decimal("100000"), down_payment=Decimal("0"), term_months=36)
 
     plan = uc.execute(req)
 
     # Verify principal is correct
-    assert plan.principal == 100_000
-    assert plan.annual_rate == 0.10
+    assert plan.principal == Decimal("100000")
+    assert plan.annual_rate == Decimal("0.10")
     assert plan.term_months == 36
 
-    # Verify monthly payment (should be ~3,226.72)
-    assert 3_226 < plan.monthly_payment < 3_227
+    # Verify monthly payment (exact, deterministic with Decimal)
+    assert plan.monthly_payment == Decimal("3226.72")
 
-    # Verify total paid and interest
-    expected_total = plan.monthly_payment * 36
-    assert abs(plan.total_paid - expected_total) < 0.01
-    assert abs(plan.total_interest - (expected_total - 100_000)) < 0.01
+    # Verify total paid and interest (exact calculations)
+    assert plan.total_paid == Decimal("3226.72") * 36
+    assert plan.total_interest == plan.total_paid - Decimal("100000")
 
 
 def test_calculates_with_zero_interest_rate():
@@ -218,18 +219,19 @@ def test_calculates_with_zero_interest_rate():
 
     Special case: The code handles r=0 separately to avoid division by zero.
     """
-    uc = CalculateFinancingPlan(annual_rate=0.0)
-    req = FinancingRequest(price=120_000, down_payment=20_000, term_months=48)
+    uc = CalculateFinancingPlan(annual_rate=Decimal("0"))
+    req = FinancingRequest(price=Decimal("120000"), down_payment=Decimal("20000"), term_months=48)
 
     plan = uc.execute(req)
 
-    # With 0% interest, monthly payment = principal / months
-    expected_payment = 100_000 / 48
-    assert abs(plan.monthly_payment - expected_payment) < 0.01
+    # With 0% interest, monthly payment = principal / months (rounded to cents)
+    expected_payment = Decimal("2083.33")  # 100000 / 48 = 2083.33333... rounded
+    assert plan.monthly_payment == expected_payment
 
-    # Total paid should equal principal (no interest)
-    assert abs(plan.total_paid - 100_000) < 0.01
-    assert abs(plan.total_interest - 0) < 0.01
+    # Total paid should equal monthly_payment * months (exact)
+    assert plan.total_paid == expected_payment * 48
+    # Small rounding difference: total_paid might be slightly different from principal
+    assert plan.total_interest == plan.total_paid - Decimal("100000")
 
 
 def test_calculates_with_custom_interest_rate():
@@ -238,20 +240,20 @@ def test_calculates_with_custom_interest_rate():
 
     Testing with 15% annual rate (0.15).
     """
-    uc = CalculateFinancingPlan(annual_rate=0.15)
-    req = FinancingRequest(price=100_000, down_payment=0, term_months=36)
+    uc = CalculateFinancingPlan(annual_rate=Decimal("0.15"))
+    req = FinancingRequest(price=Decimal("100000"), down_payment=Decimal("0"), term_months=36)
 
     plan = uc.execute(req)
 
-    assert plan.annual_rate == 0.15
-    assert plan.principal == 100_000
+    assert plan.annual_rate == Decimal("0.15")
+    assert plan.principal == Decimal("100000")
 
     # Higher interest rate means higher monthly payment than 10% rate
-    # At 15%, monthly payment ≈ 3,466.91 (vs ~3,226.72 at 10%)
-    assert 3_466 < plan.monthly_payment < 3_467
+    # At 15%, monthly payment = $3,466.53 (vs $3,226.72 at 10%)
+    assert plan.monthly_payment == Decimal("3466.53")
 
     # Total interest should be positive and significant
-    assert plan.total_interest > 24_000  # Over $24k in interest
+    assert plan.total_interest > Decimal("24000")  # Over $24k in interest
 
 
 def test_longer_term_means_lower_monthly_payment():
@@ -259,8 +261,8 @@ def test_longer_term_means_lower_monthly_payment():
     For the same principal, longer terms should have lower monthly payments.
     """
     uc = CalculateFinancingPlan()
-    req_36 = FinancingRequest(price=100_000, down_payment=0, term_months=36)
-    req_72 = FinancingRequest(price=100_000, down_payment=0, term_months=72)
+    req_36 = FinancingRequest(price=Decimal("100000"), down_payment=Decimal("0"), term_months=36)
+    req_72 = FinancingRequest(price=Decimal("100000"), down_payment=Decimal("0"), term_months=72)
 
     plan_36 = uc.execute(req_36)
     plan_72 = uc.execute(req_72)
@@ -279,20 +281,20 @@ def test_calculates_realistic_car_financing_scenario():
     This serves as documentation for a typical use case.
     """
     uc = CalculateFinancingPlan()
-    req = FinancingRequest(price=250_000, down_payment=50_000, term_months=60)
+    req = FinancingRequest(price=Decimal("250000"), down_payment=Decimal("50000"), term_months=60)
 
     plan = uc.execute(req)
 
     # Verify the basics
-    assert plan.principal == 200_000
+    assert plan.principal == Decimal("200000")
     assert plan.term_months == 60
-    assert plan.annual_rate == 0.10
+    assert plan.annual_rate == Decimal("0.10")
 
-    # Monthly payment should be around $4,249.67
-    assert 4_249 < plan.monthly_payment < 4_250
+    # Monthly payment (exact, deterministic)
+    assert plan.monthly_payment == Decimal("4249.41")
 
-    # Total paid over 5 years
-    assert 254_900 < plan.total_paid < 255_000
+    # Total paid over 5 years (exact)
+    assert plan.total_paid == Decimal("4249.41") * 60
 
     # Total interest over the life of the loan
-    assert 54_900 < plan.total_interest < 55_000
+    assert plan.total_interest == plan.total_paid - Decimal("200000")

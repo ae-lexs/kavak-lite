@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
@@ -14,6 +16,12 @@ def health() -> dict[str, str]:
 
 
 class FinancingPayload(BaseModel):
+    """
+    External API payload - accepts floats for ergonomics.
+
+    Boundary rule: convert to Decimal immediately upon entering the system.
+    """
+
     price: float
     down_payment: float
     term_months: int
@@ -21,24 +29,32 @@ class FinancingPayload(BaseModel):
 
 @app.post("/financing/plan")
 def financing_plan(payload: FinancingPayload) -> dict[str, int | float]:
+    """
+    Calculate a financing plan for a car purchase.
+
+    Accepts float inputs (standard for JSON APIs) but converts to Decimal
+    at the boundary per MONETARY_VALUES ADR.
+    """
     uc = CalculateFinancingPlan()
 
     try:
+        # Boundary conversion: float → Decimal
         plan = uc.execute(
             FinancingRequest(
-                price=payload.price,
-                down_payment=payload.down_payment,
+                price=Decimal(str(payload.price)),
+                down_payment=Decimal(str(payload.down_payment)),
                 term_months=payload.term_months,
             )
         )
     except InvalidFinancingInput as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+    # Boundary conversion: Decimal → float for JSON serialization
     return {
-        "principal": plan.principal,
-        "annual_rate": plan.annual_rate,
+        "principal": float(plan.principal),
+        "annual_rate": float(plan.annual_rate),
         "term_months": plan.term_months,
-        "monthly_payment": plan.monthly_payment,
-        "total_paid": plan.total_paid,
-        "total_interest": plan.total_interest,
+        "monthly_payment": float(plan.monthly_payment),
+        "total_paid": float(plan.total_paid),
+        "total_interest": float(plan.total_interest),
     }

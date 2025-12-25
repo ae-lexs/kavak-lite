@@ -1,5 +1,7 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
+from decimal import Decimal
 
 from kavak_lite.domain.errors import DomainError
 
@@ -9,13 +11,13 @@ class InvalidFinancingInput(DomainError):
 
 
 ALLOWED_TERMS = {36, 48, 60, 72}
-ANNUAL_INTEREST_RATE = 0.10
+ANNUAL_INTEREST_RATE = Decimal("0.10")
 
 
 @dataclass(frozen=True, slots=True)
 class FinancingRequest:
-    price: float
-    down_payment: float
+    price: Decimal
+    down_payment: Decimal
     term_months: int
 
     def validate(self) -> None:
@@ -31,9 +33,9 @@ class FinancingRequest:
 
 @dataclass(frozen=True, slots=True)
 class FinancingPlan:
-    principal: float
-    annual_rate: float
+    principal: Decimal
+    annual_rate: Decimal
     term_months: int
-    monthly_payment: float
-    total_paid: float
-    total_interest: float
+    monthly_payment: Decimal
+    total_paid: Decimal
+    total_interest: Decimal

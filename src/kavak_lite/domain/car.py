@@ -29,16 +29,24 @@ class CatalogFilters:
         if self.price_max is not None and not isinstance(self.price_max, Decimal):
             raise TypeError("price_max must be Decimal or None (no floats past the boundary)")
 
-        if self.year_min is not None and self.year_max is not None and self.year_min > self.year_max:
+        if (
+            self.year_min is not None
+            and self.year_max is not None
+            and self.year_min > self.year_max
+        ):
             raise ValueError("year_min cannot be greater than year_max")
-        if self.price_min is not None and self.price_max is not None and self.price_min > self.price_max:
+        if (
+            self.price_min is not None
+            and self.price_max is not None
+            and self.price_min > self.price_max
+        ):
             raise ValueError("price_min cannot be greater than price_max")
 
 
 @dataclass(frozen=True, slots=True)
 class Paging:
     offset: int = 0
-    size: int = 20
+    limit: int = 20
 
     def validate(self) -> None:
         if self.offset < 0:

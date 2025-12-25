@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from kavak_lite.domain.car import Car, CatalogFilters, Paging
-from kavak_lite.ports.car_catalog_repository import CarCatalogRepository
+from kavak_lite.ports.car_catalog_repository import CarCatalogRepository, SearchResult
 
 
 class InMemoryCarCatalogRepository(CarCatalogRepository):
@@ -11,21 +11,24 @@ class InMemoryCarCatalogRepository(CarCatalogRepository):
     - Stores cars in insertion order
     - Applies AND-semantics filtering
     - Applies paging AFTER filtering
+    - Returns total_count of matching cars before paging
     """
 
     def __init__(self, cars: list[Car]) -> None:
         self._cars = cars
 
-    def search(self, filters: CatalogFilters, paging: Paging) -> list[Car]:
+    def search(self, filters: CatalogFilters, paging: Paging) -> SearchResult:
         filters.validate()
         paging.validate()
 
         matches = [car for car in self._cars if self._matches(car, filters)]
+        total_count = len(matches)  # Count BEFORE paging
 
         start = paging.offset
         end = paging.offset + paging.limit
+        paginated_cars = matches[start:end]
 
-        return matches[start:end]
+        return SearchResult(cars=paginated_cars, total_count=total_count)
 
     def _matches(self, car: Car, filters: CatalogFilters) -> bool:
         if filters.make and car.make.lower() != filters.make.lower():

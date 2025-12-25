@@ -4,33 +4,9 @@
 ## Context
 <!-- What problem are we solving and why now? Link issues/docs if relevant. -->
 
-## Scope
-**In-scope**
-- 
-
-**Out-of-scope**
-- 
-
 ## Acceptance Criteria
 - [ ] 
 - [ ] 
-
-## Business Rules
-<!-- Domain invariants / decisions that must remain true -->
-- 
-- 
-
-## Design & Decisions
-### Clean Architecture placement
-- **Domain:**  
-- **UseCases:**  
-- **Adapters / Interfaces:**  
-
-### Patterns used (call out explicitly)
-- **Pattern:**  
-  **Where:**  
-  **Why:**  
-  **Tradeoffs:**  
 
 ## Flow (optional)
 <!-- Use Mermaid only when it truly helps -->
@@ -65,11 +41,3 @@ sequenceDiagram
 - Backward compatible? yes/no
 - Config/env changes:
 - Migrations:
-
-## Risks & Mitigations
-- Risk:
-- Mitigation:
-
-## Notes / Follow-ups
-- Future work:
-- Known limitations:

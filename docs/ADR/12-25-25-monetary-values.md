@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed
+Accepted
 
 **Scope:** System-wide invariant applying to all domains and use cases.
 

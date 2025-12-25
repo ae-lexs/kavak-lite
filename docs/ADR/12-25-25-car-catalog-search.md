@@ -58,15 +58,21 @@ The `CatalogRepository` contract defines filter semantics (what filtering means)
 
 #### Models
 
-**Car** (or `CarDTO` if we prefer boundary-only):
+**Car** domain entity:
 
 ```python
-id: str
-make: str
-model: str
-year: int
-price_mxn: int
+from decimal import Decimal
+
+@dataclass
+class Car:
+    id: str
+    make: str
+    model: str
+    year: int
+    price: Decimal  # Follows monetary values ADR
 ```
+
+**Important:** Price uses `Decimal` per `12-25-25-monetary-values.md`. No currency suffix - currency is a system-level concern, not encoded in the domain model.
 
 #### Filters (AND Semantics)
 
@@ -78,8 +84,8 @@ price_mxn: int
 | `model` | `str` | Case-insensitive exact match |
 | `year_min` | `int` | Inclusive minimum year |
 | `year_max` | `int` | Inclusive maximum year |
-| `price_min_mxn` | `int` | Inclusive minimum price |
-| `price_max_mxn` | `int` | Inclusive maximum price |
+| `price_min` | `Decimal` | Inclusive minimum price |
+| `price_max` | `Decimal` | Inclusive maximum price |
 
 **Semantics:**
 - All filters use **AND logic** (car must match all provided filters)
@@ -107,6 +113,37 @@ offset: int = 0    # Default: 0
 - `InMemoryCatalogRepository` returns cars in **insertion order**
 - This is the reference behavior; DB adapter may define explicit sort if needed
 - Future: Consider adding explicit ordering to contract if needed
+
+#### Monetary Values & Boundary Conversion
+
+**Price handling follows `12-25-25-monetary-values.md`:**
+
+- **Domain/UseCase/Repository layers:** Always `Decimal`
+- **Database:** `NUMERIC(12, 2)` - SQLAlchemy converts automatically
+- **API boundary:** Accept `float` for ergonomics, convert immediately to `Decimal`
+
+**Boundary conversion example (API layer):**
+
+```python
+from decimal import Decimal
+from pydantic import BaseModel, field_validator
+
+class SearchCatalogRequestDTO(BaseModel):
+    price_min: float | None = None  # Accept float from API
+    price_max: float | None = None
+
+    @field_validator("price_min", "price_max")
+    def convert_to_decimal(cls, v: float | None) -> Decimal | None:
+        """Convert at boundary - no floats past this point."""
+        if v is None:
+            return None
+        return Decimal(str(v))
+```
+
+**After boundary conversion, `float` must NOT cross into:**
+- UseCases
+- Domain entities
+- Repository methods
 
 ### 3. Architecture Design
 
@@ -144,8 +181,33 @@ class SearchCatalog:
 `InMemoryCatalogRepository` stores `list[Car]` and implements:
 
 - Filtering function `_matches(car, filters)` - applies all filter rules
+  - Price comparisons use `Decimal` arithmetic (exact comparisons)
+  - String matching is case-insensitive
+  - Range filters are inclusive
 - Paging slice after filtering - `results[offset:offset+limit]`
 - Serves as reference implementation for tests
+
+**Example implementation:**
+
+```python
+from decimal import Decimal
+
+def _matches(self, car: Car, filters: CatalogFilters) -> bool:
+    """Check if car matches all provided filters (AND semantics)."""
+    if filters.make and car.make.lower() != filters.make.lower():
+        return False
+    if filters.model and car.model.lower() != filters.model.lower():
+        return False
+    if filters.year_min and car.year < filters.year_min:
+        return False
+    if filters.year_max and car.year > filters.year_max:
+        return False
+    if filters.price_min and car.price < filters.price_min:  # Decimal comparison
+        return False
+    if filters.price_max and car.price > filters.price_max:  # Decimal comparison
+        return False
+    return True
+```
 
 ## Alternatives Considered
 
@@ -236,5 +298,9 @@ These should be added to the contract (port), not implemented ad-hoc in adapters
 
 ## References
 
-- Related: `12-25-25-monetary-values.md` - Price fields follow Decimal rules (though stored as int for MXN cents)
+- **Critical dependency:** `12-25-25-monetary-values.md` - All price fields use `Decimal` type per system-wide monetary values rule
+  - Domain entities: `price: Decimal`
+  - Filters: `price_min: Decimal`, `price_max: Decimal`
+  - Database: `NUMERIC(12, 2)`
+  - API boundary: Convert `float` → `Decimal` immediately
 - Clean Architecture: Repository pattern from Robert C. Martin's "Clean Architecture"

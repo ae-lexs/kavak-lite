@@ -285,7 +285,7 @@ class CarModel(Base):
 ```python
 # src/infra/db/repositories/car_repository.py
 from src.domain.ports.catalog_repository import CatalogRepository
-from src.domain.entities.car import Car
+from src.domain.car import Car
 from src.infra.db.models.car import CarModel
 from sqlalchemy.orm import Session
 

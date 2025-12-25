@@ -45,7 +45,7 @@ The `CatalogRepository` contract defines filter semantics (what filtering means)
 - Simple field filtering (make, model, price range) belongs in infrastructure
 
 **Reference Implementation:**
-- `InMemoryCatalogRepository` serves as canonical behavior for tests
+- `InMemoryCarCatalogRepository` serves as canonical behavior for tests
 - Defines the "truth" of filter semantics (case-insensitive, inclusive ranges, AND logic)
 - Future adapters (Postgres, Elasticsearch) must honor the same semantics
 
@@ -110,7 +110,7 @@ offset: int = 0    # Default: 0
 
 #### Ordering
 
-- `InMemoryCatalogRepository` returns cars in **insertion order**
+- `InMemoryCarCatalogRepository` returns cars in **insertion order**
 - This is the reference behavior; DB adapter may define explicit sort if needed
 - Future: Consider adding explicit ordering to contract if needed
 
@@ -178,7 +178,7 @@ class SearchCatalog:
 
 #### InMemory Adapter (Infrastructure Layer)
 
-`InMemoryCatalogRepository` stores `list[Car]` and implements:
+`InMemoryCarCatalogRepository` stores `list[Car]` and implements:
 
 - Filtering function `_matches(car, filters)` - applies all filter rules
   - Price comparisons use `Decimal` arithmetic (exact comparisons)
@@ -291,7 +291,7 @@ These should be added to the contract (port), not implemented ad-hoc in adapters
 
 - ✅ `CatalogRepository` port exists with `search()` method
 - ✅ `SearchCatalog` UseCase exists with request/response DTOs
-- ✅ `InMemoryCatalogRepository` implements filtering + paging
+- ✅ `InMemoryCarCatalogRepository` implements filtering + paging
 - ✅ Unit tests cover UseCase validation/delegation + repository contract
 - ✅ Filter semantics clearly documented and tested
 - ✅ CI green (lint + typecheck + tests)

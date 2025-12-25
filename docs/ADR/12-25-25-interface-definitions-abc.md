@@ -9,7 +9,7 @@ Accepted
 Clean Architecture requires defining **ports** (interfaces) that decouple domain/application layers from infrastructure implementations. In our system:
 
 - **Ports** define contracts (e.g., `CatalogRepository`)
-- **Adapters** implement those contracts (e.g., `PostgresCatalogRepository`, `InMemoryCatalogRepository`)
+- **Adapters** implement those contracts (e.g., `PostgresCatalogRepository`, `InMemoryCarCatalogRepository`)
 - **UseCases** depend on port interfaces, not concrete implementations
 
 Python offers two primary approaches for defining interfaces:
@@ -66,7 +66,7 @@ class CatalogRepository(ABC):
 ### Standard Adapter Pattern
 
 ```python
-from src.domain.ports.catalog_repository import CatalogRepository
+from kavak_lite.domain.ports.car_catalog_repository import CatalogRepository
 
 class PostgresCatalogRepository(CatalogRepository):
     """PostgreSQL implementation of CatalogRepository port."""
@@ -165,7 +165,7 @@ All IDEs understand ABC inheritance:
 **5. Documentation Generation**
 
 Tools like Sphinx automatically document inheritance:
-- "Subclasses: PostgresCatalogRepository, InMemoryCatalogRepository"
+- "Subclasses: PostgresCarCatalogRepository, InMemoryCarCatalogRepository"
 - Clear interface → implementation mapping
 - Better API documentation
 
@@ -327,7 +327,7 @@ class ConcreteRepositoryName(RepositoryName):
 Test doubles also inherit from port:
 
 ```python
-class InMemoryCatalogRepository(CatalogRepository):
+class InMemoryCarCatalogRepository(CatalogRepository):
     """In-memory implementation for testing."""
 
     def __init__(self):
@@ -356,15 +356,15 @@ repo = IncompleteRepo()
 src/domain/
   ports/
     __init__.py
-    catalog_repository.py      # ABC with @abstractmethod
+    car_catalog_repository.py      # ABC with @abstractmethod
 
 src/infra/
   db/
     repositories/
-      postgres_catalog_repository.py   # Inherits CatalogRepository
+      postgres_car_catalog_repository.py   # Inherits CatalogRepository
   memory/
     repositories/
-      in_memory_catalog_repository.py  # Inherits CatalogRepository
+      in_memory_car_catalog_repository.py  # Inherits CatalogRepository
 ```
 
 ## Acceptance Criteria

@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from kavak_lite.domain.car import Car, CatalogFilters, Paging
-from kavak_lite.ports.catalog_repository import CatalogRepository
+from kavak_lite.ports.car_catalog_repository import CarCatalogRepository
 
 
-class InMemoryCatalogRepository(CatalogRepository):
+class InMemoryCarCatalogRepository(CarCatalogRepository):
     """
     Canonical contract implementation for tests.
 

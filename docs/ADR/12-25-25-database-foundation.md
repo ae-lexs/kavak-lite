@@ -283,10 +283,10 @@ class CarModel(Base):
 ### Repository Implementation
 
 ```python
-# src/infra/db/repositories/car_repository.py
-from src.domain.ports.catalog_repository import CatalogRepository
-from src.domain.car import Car
-from src.infra.db.models.car import CarModel
+# kavak_lite/infra/db/repositories/car_repository.py
+from kavak_lite.domain.ports.car_catalog_repository import CatalogRepository
+from kavak_lite.domain.car import Car
+from kavak_lite.infra.db.models.car import CarModel
 from sqlalchemy.orm import Session
 
 class PostgresCatalogRepository(CatalogRepository):
@@ -346,11 +346,11 @@ def downgrade():
 
 ### Testing Strategy
 
-**Unit tests:** Use `InMemoryCatalogRepository` (no database)
+**Unit tests:** Use `InMemoryCarCatalogRepository` (no database)
 
 ```python
 def test_search_catalog():
-    repo = InMemoryCatalogRepository()
+    repo = InMemoryCarCatalogRepository()
     use_case = SearchCatalog(repo)
     # Test business logic without DB
 ```

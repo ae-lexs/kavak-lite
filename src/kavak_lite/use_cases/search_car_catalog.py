@@ -11,18 +11,18 @@ from kavak_lite.ports.car_catalog_repository import CarCatalogRepository
 
 
 @dataclass(frozen=True, slots=True)
-class CarSearchCatalogRequest:
+class SearchCarCatalogRequest:
     filters: CatalogFilters
     paging: Paging
 
 
 @dataclass(frozen=True, slots=True)
-class CarSearchCatalogResponse:
+class SearchCarCatalogResponse:
     cars: list[Car]
     total_count: int | None = None  # Total matching cars before paging (None if not calculated)
 
 
-class CarSearchCatalog:
+class SearchCarCatalog:
     """
     Car search catalog with filters and pagination.
 
@@ -35,7 +35,7 @@ class CarSearchCatalog:
     def __init__(self, car_catalog_repository: CarCatalogRepository) -> None:
         self._car_catalog_repository = car_catalog_repository
 
-    def execute(self, request: CarSearchCatalogRequest) -> CarSearchCatalogResponse:
+    def execute(self, request: SearchCarCatalogRequest) -> SearchCarCatalogResponse:
         """
         Execute catalog search.
 
@@ -61,7 +61,7 @@ class CarSearchCatalog:
             paging=request.paging,
         )
 
-        return CarSearchCatalogResponse(
+        return SearchCarCatalogResponse(
             cars=result.cars,
             total_count=result.total_count,
         )

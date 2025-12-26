@@ -2,7 +2,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from kavak_lite.domain.car import Car, CatalogFilters, Paging
+from kavak_lite.domain.car import (
+    Car,
+    CatalogFilters,
+    Paging,
+)
 from kavak_lite.ports.car_catalog_repository import CarCatalogRepository
 
 
@@ -35,6 +39,9 @@ class CarSearchCatalog:
         """
         Execute catalog search.
 
+        Validates request parameters before delegating to repository.
+        This is the single source of validation (contract programming).
+
         Args:
             request: Search parameters (filters and paging)
 
@@ -42,9 +49,10 @@ class CarSearchCatalog:
             Response containing matching cars and optional total count
 
         Raises:
-            ValueError: If paging or filter parameters are invalid
-            TypeError: If price filters are not Decimal type
+            PagingValidationError: If paging parameters are invalid
+            FilterValidationError: If filter parameters are invalid
         """
+        # Validate inputs (UseCase responsibility per contract)
         request.filters.validate()
         request.paging.validate()
 

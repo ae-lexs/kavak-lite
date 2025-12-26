@@ -16,7 +16,13 @@ from unittest.mock import Mock
 
 import pytest
 
-from kavak_lite.domain.car import Car, CatalogFilters, Paging
+from kavak_lite.domain.car import (
+    Car,
+    CatalogFilters,
+    FilterValidationError,
+    Paging,
+    PagingValidationError,
+)
 from kavak_lite.ports.car_catalog_repository import CarCatalogRepository, SearchResult
 from kavak_lite.use_cases.car_search_catalog import (
     CarSearchCatalog,
@@ -169,7 +175,7 @@ def test_execute_rejects_negative_offset(mock_repository: Mock) -> None:
         paging=Paging(offset=-1, limit=20),
     )
 
-    with pytest.raises(ValueError, match="offset must be >= 0"):
+    with pytest.raises(PagingValidationError, match="offset must be >= 0"):
         use_case.execute(request)
 
     # Repository should NOT be called
@@ -185,7 +191,7 @@ def test_execute_rejects_zero_limit(mock_repository: Mock) -> None:
         paging=Paging(offset=0, limit=0),
     )
 
-    with pytest.raises(ValueError, match="limit must be > 0"):
+    with pytest.raises(PagingValidationError, match="limit must be > 0"):
         use_case.execute(request)
 
     mock_repository.search.assert_not_called()
@@ -200,7 +206,7 @@ def test_execute_rejects_negative_limit(mock_repository: Mock) -> None:
         paging=Paging(offset=0, limit=-10),
     )
 
-    with pytest.raises(ValueError, match="limit must be > 0"):
+    with pytest.raises(PagingValidationError, match="limit must be > 0"):
         use_case.execute(request)
 
     mock_repository.search.assert_not_called()
@@ -215,7 +221,7 @@ def test_execute_rejects_limit_exceeding_max(mock_repository: Mock) -> None:
         paging=Paging(offset=0, limit=201),
     )
 
-    with pytest.raises(ValueError, match="limit must be <= 200"):
+    with pytest.raises(PagingValidationError, match="limit must be <= 200"):
         use_case.execute(request)
 
     mock_repository.search.assert_not_called()
@@ -235,7 +241,7 @@ def test_execute_rejects_year_min_greater_than_max(mock_repository: Mock) -> Non
         paging=Paging(offset=0, limit=20),
     )
 
-    with pytest.raises(ValueError, match="year_min cannot be greater than year_max"):
+    with pytest.raises(FilterValidationError, match="year_min cannot be greater than year_max"):
         use_case.execute(request)
 
     mock_repository.search.assert_not_called()
@@ -253,7 +259,7 @@ def test_execute_rejects_price_min_greater_than_max(mock_repository: Mock) -> No
         paging=Paging(offset=0, limit=20),
     )
 
-    with pytest.raises(ValueError, match="price_min cannot be greater than price_max"):
+    with pytest.raises(FilterValidationError, match="price_min cannot be greater than price_max"):
         use_case.execute(request)
 
     mock_repository.search.assert_not_called()
@@ -271,7 +277,7 @@ def test_execute_rejects_float_for_price_min(mock_repository: Mock) -> None:
         paging=Paging(offset=0, limit=20),
     )
 
-    with pytest.raises(TypeError, match="price_min must be Decimal"):
+    with pytest.raises(FilterValidationError, match="price_min must be Decimal"):
         use_case.execute(request)
 
     mock_repository.search.assert_not_called()
@@ -288,7 +294,7 @@ def test_execute_rejects_float_for_price_max(mock_repository: Mock) -> None:
         paging=Paging(offset=0, limit=20),
     )
 
-    with pytest.raises(TypeError, match="price_max must be Decimal"):
+    with pytest.raises(FilterValidationError, match="price_max must be Decimal"):
         use_case.execute(request)
 
     mock_repository.search.assert_not_called()
@@ -309,7 +315,7 @@ def test_execute_validates_filters_before_paging(mock_repository: Mock) -> None:
     )
 
     # Should fail on filters validation (called first)
-    with pytest.raises(ValueError, match="year_min"):
+    with pytest.raises(FilterValidationError, match="year_min"):
         use_case.execute(request)
 
     mock_repository.search.assert_not_called()

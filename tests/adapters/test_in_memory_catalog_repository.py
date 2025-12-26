@@ -131,6 +131,8 @@ def test_search_complex_filter_combination(cars: list[Car]) -> None:
 # ==============================================================================
 # Paging Edge Cases
 # ==============================================================================
+# Note: Validation tests (offset >= 0, limit > 0, etc.) are in UseCase tests
+#       Repositories trust that UseCase has validated inputs (contract programming)
 
 
 def test_search_paging_applies_after_filtering(cars: list[Car]) -> None:
@@ -239,17 +241,6 @@ def test_search_paging_limit_larger_than_results(cars: list[Car]) -> None:
     )
 
     assert len(result.cars) == 5
-
-
-def test_search_paging_max_limit_enforced(cars: list[Car]) -> None:
-    """Limit exceeding maximum (200) raises ValueError."""
-    repo = InMemoryCarCatalogRepository(cars)
-
-    with pytest.raises(ValueError, match="limit must be <= 200"):
-        repo.search(
-            filters=CatalogFilters(),
-            paging=Paging(offset=0, limit=201),  # Exceeds max
-        )
 
 
 def test_search_paging_first_item_only(cars: list[Car]) -> None:

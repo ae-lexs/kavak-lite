@@ -18,9 +18,7 @@ class InMemoryCarCatalogRepository(CarCatalogRepository):
         self._cars = cars
 
     def search(self, filters: CatalogFilters, paging: Paging) -> SearchResult:
-        filters.validate()
-        paging.validate()
-
+        # Trust that UseCase has validated inputs (contract programming)
         matches = [car for car in self._cars if self._matches(car, filters)]
         total_count = len(matches)  # Count BEFORE paging
 

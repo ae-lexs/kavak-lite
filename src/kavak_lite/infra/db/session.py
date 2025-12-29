@@ -32,10 +32,10 @@ def get_engine() -> Engine:
         _engine = create_engine(
             database_url(),
             # Connection pool configuration
-            pool_size=10,           # Keep 10 connections in pool
-            max_overflow=20,        # Allow 20 additional connections if needed (30 total max)
-            pool_pre_ping=True,     # Verify connection health before checkout
-            pool_recycle=3600,      # Recycle connections every hour (prevent stale connections)
+            pool_size=10,  # Keep 10 connections in pool
+            max_overflow=20,  # Allow 20 additional connections if needed (30 total max)
+            pool_pre_ping=True,  # Verify connection health before checkout
+            pool_recycle=3600,  # Recycle connections every hour (prevent stale connections)
             # SQLAlchemy 2.0 mode
             future=True,
         )

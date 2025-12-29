@@ -143,17 +143,16 @@ def test_app_includes_health_router() -> None:
 def test_app_includes_cars_router_with_v1_prefix() -> None:
     """Application includes cars router with /v1 prefix."""
     app = build_app()
-    client = TestClient(app)
 
-    # Cars endpoint should be at /v1/cars (not /cars)
-    response = client.get("/cars")
-    assert response.status_code == 404  # Not at root
+    # Verify via OpenAPI schema (doesn't trigger dependencies)
+    openapi_schema = app.openapi()
+    paths = openapi_schema["paths"]
+
+    # Cars endpoint should NOT be at /cars
+    assert "/cars" not in paths
 
     # Should be at /v1/cars
-    # Note: This will fail without mocking use case, but verifies routing works
-    response = client.get("/v1/cars")
-    # 500 is expected without dependency overrides, but proves route exists
-    assert response.status_code in [200, 500]  # Route exists (not 404)
+    assert "/v1/cars" in paths
 
 
 def test_app_has_routes_registered() -> None:
@@ -284,17 +283,16 @@ def test_health_endpoint_responds() -> None:
 def test_cars_endpoint_exists_at_correct_path() -> None:
     """Cars endpoint exists at /v1/cars (not at /cars)."""
     app = build_app()
-    client = TestClient(app)
+
+    # Verify via OpenAPI schema (doesn't trigger dependencies)
+    openapi_schema = app.openapi()
+    paths = openapi_schema["paths"]
 
     # Should NOT exist at /cars
-    response = client.get("/cars")
-    assert response.status_code == 404
+    assert "/cars" not in paths
 
-    # Should exist at /v1/cars (route exists even if dependencies fail)
-    response = client.get("/v1/cars")
-    # Could be 200 (if dependencies work) or 500 (if dependencies fail)
-    # But NOT 404 (which means route doesn't exist)
-    assert response.status_code != 404
+    # Should exist at /v1/cars
+    assert "/v1/cars" in paths
 
 
 def test_app_returns_404_for_unknown_routes() -> None:

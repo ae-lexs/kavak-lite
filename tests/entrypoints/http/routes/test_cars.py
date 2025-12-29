@@ -234,8 +234,13 @@ def test_get_cars_preserves_decimal_precision(
 # ==============================================================================
 
 
-def test_get_cars_rejects_invalid_year_min_type(client: TestClient) -> None:
+def test_get_cars_rejects_invalid_year_min_type(
+    app: FastAPI, client: TestClient, mock_use_case: Mock
+) -> None:
     """Route rejects non-integer year_min."""
+    # Override dependency to avoid database connection in CI
+    app.dependency_overrides[get_search_catalog_use_case] = lambda: mock_use_case
+
     response = client.get(
         "/v1/cars",
         params={"year_min": "abc"},
@@ -246,8 +251,13 @@ def test_get_cars_rejects_invalid_year_min_type(client: TestClient) -> None:
     assert "detail" in data
 
 
-def test_get_cars_rejects_negative_offset(client: TestClient) -> None:
+def test_get_cars_rejects_negative_offset(
+    app: FastAPI, client: TestClient, mock_use_case: Mock
+) -> None:
     """Route rejects negative offset (Pydantic validation)."""
+    # Override dependency to avoid database connection in CI
+    app.dependency_overrides[get_search_catalog_use_case] = lambda: mock_use_case
+
     response = client.get(
         "/v1/cars",
         params={"offset": -1},
@@ -256,8 +266,11 @@ def test_get_cars_rejects_negative_offset(client: TestClient) -> None:
     assert response.status_code == 422
 
 
-def test_get_cars_rejects_zero_limit(client: TestClient) -> None:
+def test_get_cars_rejects_zero_limit(app: FastAPI, client: TestClient, mock_use_case: Mock) -> None:
     """Route rejects zero limit (Pydantic validation)."""
+    # Override dependency to avoid database connection in CI
+    app.dependency_overrides[get_search_catalog_use_case] = lambda: mock_use_case
+
     response = client.get(
         "/v1/cars",
         params={"limit": 0},
@@ -266,8 +279,13 @@ def test_get_cars_rejects_zero_limit(client: TestClient) -> None:
     assert response.status_code == 422
 
 
-def test_get_cars_rejects_limit_exceeding_max(client: TestClient) -> None:
+def test_get_cars_rejects_limit_exceeding_max(
+    app: FastAPI, client: TestClient, mock_use_case: Mock
+) -> None:
     """Route rejects limit > 200 (Pydantic validation)."""
+    # Override dependency to avoid database connection in CI
+    app.dependency_overrides[get_search_catalog_use_case] = lambda: mock_use_case
+
     response = client.get(
         "/v1/cars",
         params={"limit": 201},
@@ -276,8 +294,13 @@ def test_get_cars_rejects_limit_exceeding_max(client: TestClient) -> None:
     assert response.status_code == 422
 
 
-def test_get_cars_rejects_invalid_price_format(client: TestClient) -> None:
+def test_get_cars_rejects_invalid_price_format(
+    app: FastAPI, client: TestClient, mock_use_case: Mock
+) -> None:
     """Route rejects price that doesn't match pattern."""
+    # Override dependency to avoid database connection in CI
+    app.dependency_overrides[get_search_catalog_use_case] = lambda: mock_use_case
+
     response = client.get(
         "/v1/cars",
         params={"price_min": "abc"},
@@ -286,8 +309,13 @@ def test_get_cars_rejects_invalid_price_format(client: TestClient) -> None:
     assert response.status_code == 422
 
 
-def test_get_cars_rejects_price_with_too_many_decimals(client: TestClient) -> None:
+def test_get_cars_rejects_price_with_too_many_decimals(
+    app: FastAPI, client: TestClient, mock_use_case: Mock
+) -> None:
     """Route rejects price with more than 2 decimal places."""
+    # Override dependency to avoid database connection in CI
+    app.dependency_overrides[get_search_catalog_use_case] = lambda: mock_use_case
+
     response = client.get(
         "/v1/cars",
         params={"price_min": "12345.678"},

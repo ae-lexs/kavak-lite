@@ -14,12 +14,29 @@ _session_local: sessionmaker[Session] | None = None
 
 
 def get_engine() -> Engine:
-    """Get or create the database engine (lazy initialization)."""
+    """
+    Get or create the database engine (lazy initialization).
+
+    Connection Pool Configuration:
+    - pool_size: Number of connections to keep open (base pool)
+    - max_overflow: Additional connections allowed beyond pool_size
+    - pool_pre_ping: Verify connection health before use
+    - pool_recycle: Recycle connections after N seconds (prevent stale connections)
+
+    Total max connections = pool_size + max_overflow
+
+    See ADR: docs/ADR/12-29-25-database-session-per-request.md
+    """
     global _engine
     if _engine is None:
         _engine = create_engine(
             database_url(),
-            pool_pre_ping=True,
+            # Connection pool configuration
+            pool_size=10,           # Keep 10 connections in pool
+            max_overflow=20,        # Allow 20 additional connections if needed (30 total max)
+            pool_pre_ping=True,     # Verify connection health before checkout
+            pool_recycle=3600,      # Recycle connections every hour (prevent stale connections)
+            # SQLAlchemy 2.0 mode
             future=True,
         )
     return _engine

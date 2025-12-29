@@ -1,6 +1,6 @@
 SHELL := /bin/sh
 
-.PHONY: help build up down logs ps sh lock sync test test-file lint lint-fix typecheck fmt check clean db-status db-history db-up db-down db-base db-new db-sql db-shell
+.PHONY: help build up down logs ps sh lock sync test test-file test-coverage lint lint-fix typecheck fmt check clean db-status db-history db-up db-down db-base db-new db-sql db-shell
 
 help:
 	@echo "kavak-lite commands:"
@@ -14,6 +14,7 @@ help:
 	@echo "  make sync        Install deps from lock (frozen)"
 	@echo "  make test        Run all tests"
 	@echo "  make test-file   Run specific test file (FILE=path/to/test.py)"
+	@echo "  make test-coverage  Run tests with coverage report"
 	@echo "  make lint        Ruff check"
 	@echo "  make lint-fix    Ruff check and fix"
 	@echo "  make fmt         Ruff format"
@@ -64,6 +65,9 @@ test-file:
 		exit 1; \
 	fi
 	docker compose run --rm api uv run pytest $(FILE) -v
+
+test-coverage:
+	docker compose run --rm api uv run pytest --cov=src/kavak_lite --cov-report=term-missing
 
 lint:
 	docker compose run --rm api uv run ruff check .

@@ -1,60 +1,44 @@
-from decimal import Decimal
-
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-
-from kavak_lite.domain.financing import FinancingRequest, InvalidFinancingInput
-from kavak_lite.use_cases.calculate_financing_plan import CalculateFinancingPlan
+from fastapi import FastAPI
 
 
-app = FastAPI(title="kavak-lite")
+from kavak_lite.entrypoints.http.routes.health import router as health_router
+from kavak_lite.entrypoints.http.routes.cars import router as cars_router
 
 
-@app.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "ok"}
+def build_app() -> FastAPI:
+    app = FastAPI(
+        title="Kavak Lite API",
+        description="""
+        Car marketplace API for browsing, searching, and financing vehicles.
+
+        ## Features
+        - Search car catalog with filters
+        - Calculate financing plans
+        - Get car details
+
+        ## Authentication
+        Currently no authentication required (development phase).
+
+        ## Rate Limiting
+        No rate limits currently enforced.
+        """,
+        version="0.1.0",
+        docs_url="/docs",  # Swagger UI
+        redoc_url="/redoc",  # ReDoc alternative
+        openapi_url="/openapi.json",  # OpenAPI schema
+        contact={
+            "name": "Kavak Lite Team",
+            "email": "dev@kavak-lite.com",
+        },
+        license_info={
+            "name": "Proprietary",
+        },
+    )
+
+    app.include_router(health_router)
+    app.include_router(cars_router, prefix="/v1")
+
+    return app
 
 
-class FinancingPayload(BaseModel):
-    """
-    External API payload - accepts floats for ergonomics.
-
-    Boundary rule: convert to Decimal immediately upon entering the system.
-    """
-
-    price: float
-    down_payment: float
-    term_months: int
-
-
-@app.post("/financing/plan")
-def financing_plan(payload: FinancingPayload) -> dict[str, int | float]:
-    """
-    Calculate a financing plan for a car purchase.
-
-    Accepts float inputs (standard for JSON APIs) but converts to Decimal
-    at the boundary per MONETARY_VALUES ADR.
-    """
-    uc = CalculateFinancingPlan()
-
-    try:
-        # Boundary conversion: float → Decimal
-        plan = uc.execute(
-            FinancingRequest(
-                price=Decimal(str(payload.price)),
-                down_payment=Decimal(str(payload.down_payment)),
-                term_months=payload.term_months,
-            )
-        )
-    except InvalidFinancingInput as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-    # Boundary conversion: Decimal → float for JSON serialization
-    return {
-        "principal": float(plan.principal),
-        "annual_rate": float(plan.annual_rate),
-        "term_months": plan.term_months,
-        "monthly_payment": float(plan.monthly_payment),
-        "total_paid": float(plan.total_paid),
-        "total_interest": float(plan.total_interest),
-    }
+app = build_app()

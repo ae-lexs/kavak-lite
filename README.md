@@ -81,6 +81,7 @@ The `Makefile` provides a consistent and ergonomic interface.
 | `make sync` | Install dependencies from lockfile (frozen) |
 | `make test` | Run all tests |
 | `make test-file FILE=path/to/test.py` | Run specific test file with verbose output |
+| `make test-coverage` | Run tests with coverage report |
 | `make lint` | Run Ruff checks |
 | `make lint-fix` | Run Ruff checks and fix |
 | `make fmt` | Auto-format with Ruff |

@@ -1,5 +1,5 @@
 """
-Comprehensive test suite for CarSearchCatalog UseCase.
+Comprehensive test suite for SearchCarCatalog UseCase.
 
 This test suite verifies the UseCase behavior per the Car Catalog Search ADR:
 - Validates paging parameters (offset, limit constraints)
@@ -24,10 +24,10 @@ from kavak_lite.domain.car import (
     PagingValidationError,
 )
 from kavak_lite.ports.car_catalog_repository import CarCatalogRepository, SearchResult
-from kavak_lite.use_cases.car_search_catalog import (
-    CarSearchCatalog,
-    CarSearchCatalogRequest,
-    CarSearchCatalogResponse,
+from kavak_lite.use_cases.search_car_catalog import (
+    SearchCarCatalog,
+    SearchCarCatalogRequest,
+    SearchCarCatalogResponse,
 )
 
 
@@ -56,9 +56,9 @@ def test_execute_successful_search(mock_repository: Mock, sample_cars: list[Car]
     mock_repository.search.return_value = SearchResult(
         cars=sample_cars, total_count=len(sample_cars)
     )
-    use_case = CarSearchCatalog(mock_repository)
+    use_case = SearchCarCatalog(mock_repository)
 
-    request = CarSearchCatalogRequest(
+    request = SearchCarCatalogRequest(
         filters=CatalogFilters(make="Toyota"),
         paging=Paging(offset=0, limit=20),
     )
@@ -72,7 +72,7 @@ def test_execute_successful_search(mock_repository: Mock, sample_cars: list[Car]
     )
 
     # Verify response structure
-    assert isinstance(response, CarSearchCatalogResponse)
+    assert isinstance(response, SearchCarCatalogResponse)
     assert response.cars == sample_cars
 
 
@@ -81,9 +81,9 @@ def test_execute_with_empty_filters(mock_repository: Mock, sample_cars: list[Car
     mock_repository.search.return_value = SearchResult(
         cars=sample_cars, total_count=len(sample_cars)
     )
-    use_case = CarSearchCatalog(mock_repository)
+    use_case = SearchCarCatalog(mock_repository)
 
-    request = CarSearchCatalogRequest(
+    request = SearchCarCatalogRequest(
         filters=CatalogFilters(),  # No filters
         paging=Paging(offset=0, limit=20),
     )
@@ -97,9 +97,9 @@ def test_execute_with_empty_filters(mock_repository: Mock, sample_cars: list[Car
 def test_execute_with_no_results(mock_repository: Mock) -> None:
     """UseCase handles empty results correctly."""
     mock_repository.search.return_value = SearchResult(cars=[], total_count=0)
-    use_case = CarSearchCatalog(mock_repository)
+    use_case = SearchCarCatalog(mock_repository)
 
-    request = CarSearchCatalogRequest(
+    request = SearchCarCatalogRequest(
         filters=CatalogFilters(make="Ferrari"),
         paging=Paging(offset=0, limit=20),
     )
@@ -114,9 +114,9 @@ def test_execute_with_all_filters(mock_repository: Mock, sample_cars: list[Car])
     mock_repository.search.return_value = SearchResult(
         cars=sample_cars, total_count=len(sample_cars)
     )
-    use_case = CarSearchCatalog(mock_repository)
+    use_case = SearchCarCatalog(mock_repository)
 
-    request = CarSearchCatalogRequest(
+    request = SearchCarCatalogRequest(
         filters=CatalogFilters(
             make="Toyota",
             model="Corolla",
@@ -142,9 +142,9 @@ def test_execute_with_custom_paging(mock_repository: Mock, sample_cars: list[Car
     mock_repository.search.return_value = SearchResult(
         cars=sample_cars, total_count=len(sample_cars)
     )
-    use_case = CarSearchCatalog(mock_repository)
+    use_case = SearchCarCatalog(mock_repository)
 
-    request = CarSearchCatalogRequest(
+    request = SearchCarCatalogRequest(
         filters=CatalogFilters(),
         paging=Paging(offset=10, limit=5),
     )
@@ -168,9 +168,9 @@ def test_execute_with_custom_paging(mock_repository: Mock, sample_cars: list[Car
 
 def test_execute_rejects_negative_offset(mock_repository: Mock) -> None:
     """UseCase validates offset >= 0."""
-    use_case = CarSearchCatalog(mock_repository)
+    use_case = SearchCarCatalog(mock_repository)
 
-    request = CarSearchCatalogRequest(
+    request = SearchCarCatalogRequest(
         filters=CatalogFilters(),
         paging=Paging(offset=-1, limit=20),
     )
@@ -184,9 +184,9 @@ def test_execute_rejects_negative_offset(mock_repository: Mock) -> None:
 
 def test_execute_rejects_zero_limit(mock_repository: Mock) -> None:
     """UseCase validates limit > 0."""
-    use_case = CarSearchCatalog(mock_repository)
+    use_case = SearchCarCatalog(mock_repository)
 
-    request = CarSearchCatalogRequest(
+    request = SearchCarCatalogRequest(
         filters=CatalogFilters(),
         paging=Paging(offset=0, limit=0),
     )
@@ -199,9 +199,9 @@ def test_execute_rejects_zero_limit(mock_repository: Mock) -> None:
 
 def test_execute_rejects_negative_limit(mock_repository: Mock) -> None:
     """UseCase validates limit > 0."""
-    use_case = CarSearchCatalog(mock_repository)
+    use_case = SearchCarCatalog(mock_repository)
 
-    request = CarSearchCatalogRequest(
+    request = SearchCarCatalogRequest(
         filters=CatalogFilters(),
         paging=Paging(offset=0, limit=-10),
     )
@@ -214,9 +214,9 @@ def test_execute_rejects_negative_limit(mock_repository: Mock) -> None:
 
 def test_execute_rejects_limit_exceeding_max(mock_repository: Mock) -> None:
     """UseCase validates limit <= 200."""
-    use_case = CarSearchCatalog(mock_repository)
+    use_case = SearchCarCatalog(mock_repository)
 
-    request = CarSearchCatalogRequest(
+    request = SearchCarCatalogRequest(
         filters=CatalogFilters(),
         paging=Paging(offset=0, limit=201),
     )
@@ -234,9 +234,9 @@ def test_execute_rejects_limit_exceeding_max(mock_repository: Mock) -> None:
 
 def test_execute_rejects_year_min_greater_than_max(mock_repository: Mock) -> None:
     """UseCase validates year_min <= year_max."""
-    use_case = CarSearchCatalog(mock_repository)
+    use_case = SearchCarCatalog(mock_repository)
 
-    request = CarSearchCatalogRequest(
+    request = SearchCarCatalogRequest(
         filters=CatalogFilters(year_min=2022, year_max=2020),  # Invalid range
         paging=Paging(offset=0, limit=20),
     )
@@ -249,9 +249,9 @@ def test_execute_rejects_year_min_greater_than_max(mock_repository: Mock) -> Non
 
 def test_execute_rejects_price_min_greater_than_max(mock_repository: Mock) -> None:
     """UseCase validates price_min <= price_max."""
-    use_case = CarSearchCatalog(mock_repository)
+    use_case = SearchCarCatalog(mock_repository)
 
-    request = CarSearchCatalogRequest(
+    request = SearchCarCatalogRequest(
         filters=CatalogFilters(
             price_min=Decimal("500000.00"),
             price_max=Decimal("300000.00"),  # Invalid range
@@ -267,10 +267,10 @@ def test_execute_rejects_price_min_greater_than_max(mock_repository: Mock) -> No
 
 def test_execute_rejects_float_for_price_min(mock_repository: Mock) -> None:
     """UseCase validates price_min is Decimal (no float leakage)."""
-    use_case = CarSearchCatalog(mock_repository)
+    use_case = SearchCarCatalog(mock_repository)
 
     # Type checkers would catch this, but runtime validation is the guardrail
-    request = CarSearchCatalogRequest(
+    request = SearchCarCatalogRequest(
         filters=CatalogFilters(
             price_min=250000.00,  # type: ignore - Intentionally wrong type for test
         ),
@@ -285,9 +285,9 @@ def test_execute_rejects_float_for_price_min(mock_repository: Mock) -> None:
 
 def test_execute_rejects_float_for_price_max(mock_repository: Mock) -> None:
     """UseCase validates price_max is Decimal (no float leakage)."""
-    use_case = CarSearchCatalog(mock_repository)
+    use_case = SearchCarCatalog(mock_repository)
 
-    request = CarSearchCatalogRequest(
+    request = SearchCarCatalogRequest(
         filters=CatalogFilters(
             price_max=400000.00,  # type: ignore - Intentionally wrong type for test
         ),
@@ -307,9 +307,9 @@ def test_execute_rejects_float_for_price_max(mock_repository: Mock) -> None:
 
 def test_execute_validates_filters_before_paging(mock_repository: Mock) -> None:
     """UseCase validates filters first (fails fast on first error)."""
-    use_case = CarSearchCatalog(mock_repository)
+    use_case = SearchCarCatalog(mock_repository)
 
-    request = CarSearchCatalogRequest(
+    request = SearchCarCatalogRequest(
         filters=CatalogFilters(year_min=2022, year_max=2020),  # Invalid filters
         paging=Paging(offset=-1, limit=20),  # Also invalid paging
     )
@@ -331,9 +331,9 @@ def test_execute_does_not_filter_in_use_case(mock_repository: Mock, sample_cars:
     mock_repository.search.return_value = SearchResult(
         cars=sample_cars, total_count=len(sample_cars)
     )
-    use_case = CarSearchCatalog(mock_repository)
+    use_case = SearchCarCatalog(mock_repository)
 
-    request = CarSearchCatalogRequest(
+    request = SearchCarCatalogRequest(
         filters=CatalogFilters(make="Toyota", price_min=Decimal("100000.00")),
         paging=Paging(offset=0, limit=20),
     )
@@ -351,9 +351,9 @@ def test_execute_returns_list_not_sequence(mock_repository: Mock, sample_cars: l
     mock_repository.search.return_value = SearchResult(
         cars=sample_cars, total_count=len(sample_cars)
     )
-    use_case = CarSearchCatalog(mock_repository)
+    use_case = SearchCarCatalog(mock_repository)
 
-    request = CarSearchCatalogRequest(
+    request = SearchCarCatalogRequest(
         filters=CatalogFilters(),
         paging=Paging(offset=0, limit=20),
     )
@@ -370,9 +370,9 @@ def test_execute_response_is_immutable(mock_repository: Mock, sample_cars: list[
     mock_repository.search.return_value = SearchResult(
         cars=sample_cars, total_count=len(sample_cars)
     )
-    use_case = CarSearchCatalog(mock_repository)
+    use_case = SearchCarCatalog(mock_repository)
 
-    request = CarSearchCatalogRequest(
+    request = SearchCarCatalogRequest(
         filters=CatalogFilters(),
         paging=Paging(offset=0, limit=20),
     )
@@ -392,9 +392,9 @@ def test_execute_response_is_immutable(mock_repository: Mock, sample_cars: list[
 def test_execute_returns_total_count(mock_repository: Mock, sample_cars: list[Car]) -> None:
     """UseCase returns total_count from repository in response."""
     mock_repository.search.return_value = SearchResult(cars=sample_cars, total_count=10)
-    use_case = CarSearchCatalog(mock_repository)
+    use_case = SearchCarCatalog(mock_repository)
 
-    request = CarSearchCatalogRequest(
+    request = SearchCarCatalogRequest(
         filters=CatalogFilters(make="Toyota"),
         paging=Paging(offset=0, limit=2),
     )
@@ -413,9 +413,9 @@ def test_execute_total_count_reflects_pre_paging_total(mock_repository: Mock) ->
         Car(id="2", make="Toyota", model="Camry", year=2021, price=Decimal("300000.00")),
     ]
     mock_repository.search.return_value = SearchResult(cars=paginated_cars, total_count=5)
-    use_case = CarSearchCatalog(mock_repository)
+    use_case = SearchCarCatalog(mock_repository)
 
-    request = CarSearchCatalogRequest(
+    request = SearchCarCatalogRequest(
         filters=CatalogFilters(make="Toyota"),
         paging=Paging(offset=0, limit=2),
     )
@@ -429,9 +429,9 @@ def test_execute_total_count_reflects_pre_paging_total(mock_repository: Mock) ->
 def test_execute_total_count_can_be_none(mock_repository: Mock, sample_cars: list[Car]) -> None:
     """UseCase handles optional total_count (repository may not calculate it)."""
     mock_repository.search.return_value = SearchResult(cars=sample_cars, total_count=None)
-    use_case = CarSearchCatalog(mock_repository)
+    use_case = SearchCarCatalog(mock_repository)
 
-    request = CarSearchCatalogRequest(
+    request = SearchCarCatalogRequest(
         filters=CatalogFilters(),
         paging=Paging(offset=0, limit=20),
     )
@@ -445,9 +445,9 @@ def test_execute_total_count_can_be_none(mock_repository: Mock, sample_cars: lis
 def test_execute_total_count_zero_for_no_matches(mock_repository: Mock) -> None:
     """total_count is 0 when no cars match filters."""
     mock_repository.search.return_value = SearchResult(cars=[], total_count=0)
-    use_case = CarSearchCatalog(mock_repository)
+    use_case = SearchCarCatalog(mock_repository)
 
-    request = CarSearchCatalogRequest(
+    request = SearchCarCatalogRequest(
         filters=CatalogFilters(make="Ferrari"),
         paging=Paging(offset=0, limit=20),
     )
@@ -461,9 +461,9 @@ def test_execute_total_count_zero_for_no_matches(mock_repository: Mock) -> None:
 def test_execute_response_includes_metadata(mock_repository: Mock, sample_cars: list[Car]) -> None:
     """Response structure includes both cars and total_count metadata."""
     mock_repository.search.return_value = SearchResult(cars=sample_cars, total_count=100)
-    use_case = CarSearchCatalog(mock_repository)
+    use_case = SearchCarCatalog(mock_repository)
 
-    request = CarSearchCatalogRequest(
+    request = SearchCarCatalogRequest(
         filters=CatalogFilters(),
         paging=Paging(offset=0, limit=20),
     )

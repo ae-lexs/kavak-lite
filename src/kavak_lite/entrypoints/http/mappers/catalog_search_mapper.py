@@ -5,7 +5,7 @@ from decimal import Decimal
 from kavak_lite.domain.car import Car, CatalogFilters, Paging
 from kavak_lite.entrypoints.http.dtos.catalog_search import (
     CarResponseDTO,
-    CarSearchQueryDTO,
+    CarsSearchQueryDTO,
     CatalogSearchResponseDTO,
 )
 from kavak_lite.use_cases.search_car_catalog import (
@@ -18,7 +18,7 @@ class CatalogSearchMapper:
     """Maps between REST DTOs and domain models for catalog search."""
 
     @staticmethod
-    def to_domain_filters(dto: CarSearchQueryDTO) -> CatalogFilters:
+    def to_domain_filters(dto: CarsSearchQueryDTO) -> CatalogFilters:
         """
         Converts query params to domain filters, handling Decimal conversion.
 
@@ -38,7 +38,7 @@ class CatalogSearchMapper:
         )
 
     @staticmethod
-    def to_domain_paging(dto: CarSearchQueryDTO) -> Paging:
+    def to_domain_paging(dto: CarsSearchQueryDTO) -> Paging:
         """
         Converts pagination params to domain paging object.
 
@@ -51,7 +51,7 @@ class CatalogSearchMapper:
         return Paging(offset=dto.offset, limit=dto.limit)
 
     @staticmethod
-    def to_domain_request(dto: CarSearchQueryDTO) -> SearchCarCatalogRequest:
+    def to_domain_request(dto: CarsSearchQueryDTO) -> SearchCarCatalogRequest:
         """
         Convenience method: builds complete domain request from DTO.
 

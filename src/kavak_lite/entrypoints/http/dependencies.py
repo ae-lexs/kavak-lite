@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from typing import Generator
 
+from fastapi import Depends
 from sqlalchemy.orm import Session
 
 from kavak_lite.adapters.postgres_car_catalog_repository import (
@@ -40,7 +41,7 @@ def get_db() -> Generator[Session, None, None]:
         yield session
 
 
-def get_search_catalog_use_case(db: Session) -> SearchCarCatalog:
+def get_search_catalog_use_case(db: Session = Depends(get_db)) -> SearchCarCatalog:
     """
     Factory function that returns a configured SearchCarCatalog use case.
 

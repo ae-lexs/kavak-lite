@@ -2,6 +2,7 @@ from fastapi import FastAPI
 
 
 from kavak_lite.entrypoints.http.routes.health import router as health_router
+from kavak_lite.entrypoints.http.routes.cars import router as cars_router
 
 
 def build_app() -> FastAPI:
@@ -34,7 +35,8 @@ def build_app() -> FastAPI:
         },
     )
 
-    app.include_router(health_router, prefix="/v1")
+    app.include_router(health_router)
+    app.include_router(cars_router, prefix="/v1")
 
     return app
 

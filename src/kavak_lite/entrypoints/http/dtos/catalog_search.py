@@ -1,4 +1,3 @@
-from typing import Optional
 from pydantic import BaseModel, Field
 
 
@@ -10,19 +9,70 @@ class CarResponseDTO(BaseModel):
     price: str
 
 
-class CarSearchQueryDTO(BaseModel):
-    # Query params (all optional except pagination defaults)
-    brand: Optional[str] = Field(default=None, examples=["Toyota"])
-    model: Optional[str] = Field(default=None, examples=["Corolla"])
+class CarsSearchQueryDTO(BaseModel):
+    """Query parameters for searching cars in the catalog."""
 
-    year_min: Optional[int] = Field(default=None, examples=[2015], ge=1900)
-    year_max: Optional[int] = Field(default=None, examples=[2020], ge=1900)
+    brand: str | None = Field(
+        default=None,
+        description="Filter by car brand (case-insensitive exact match)",
+        examples=["Toyota"],
+    )
+    model: str | None = Field(
+        default=None,
+        description="Filter by car model (case-insensitive exact match)",
+        examples=["Camry"],
+    )
+    year_min: int | None = Field(
+        default=None,
+        description="Minimum year (inclusive)",
+        examples=[2018],
+        ge=1900,
+    )
+    year_max: int | None = Field(
+        default=None,
+        description="Maximum year (inclusive)",
+        examples=[2023],
+        ge=1900,
+    )
+    price_min: str | None = Field(
+        default=None,
+        description="Minimum price (inclusive, decimal as string)",
+        examples=["20000.00"],
+        pattern=r"^\d+(\.\d{1,2})?$",
+    )
+    price_max: str | None = Field(
+        default=None,
+        description="Maximum price (inclusive, decimal as string)",
+        examples=["35000.00"],
+        pattern=r"^\d+(\.\d{1,2})?$",
+    )
+    offset: int = Field(
+        default=0,
+        description="Number of results to skip",
+        examples=[0],
+        ge=0,
+    )
+    limit: int = Field(
+        default=20,
+        description="Maximum number of results to return",
+        examples=[20],
+        ge=1,
+        le=200,
+    )
 
-    price_min: Optional[str] = Field(default=None, examples=["15000.0"])
-    price_max: Optional[str] = Field(default=None, examples=["25000.0"])
-
-    offset: int = Field(default=0, ge=0, examples=[0])
-    limit: int = Field(default=20, ge=1, le=100, examples=[100])
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "brand": "Toyota",
+                "model": "Camry",
+                "year_min": 2018,
+                "year_max": 2023,
+                "price_min": "20000.00",
+                "price_max": "35000.00",
+                "offset": 0,
+                "limit": 20,
+            }
+        }
 
 
 class CatalogSearchResponseDTO(BaseModel):

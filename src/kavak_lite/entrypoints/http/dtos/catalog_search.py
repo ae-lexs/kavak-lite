@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class CarResponseDTO(BaseModel):
@@ -60,8 +60,8 @@ class CarsSearchQueryDTO(BaseModel):
         le=200,
     )
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "brand": "Toyota",
                 "model": "Camry",
@@ -73,6 +73,7 @@ class CarsSearchQueryDTO(BaseModel):
                 "limit": 20,
             }
         }
+    )
 
 
 class CatalogSearchResponseDTO(BaseModel):

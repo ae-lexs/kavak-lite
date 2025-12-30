@@ -3,30 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal
 
-from kavak_lite.domain.errors import DomainError
-
-
-# ==============================================================================
-# Domain Exceptions
-# ==============================================================================
-
-
-class ValidationError(DomainError):
-    """Base exception for validation errors in the domain layer."""
-
-    pass
-
-
-class PagingValidationError(ValidationError):
-    """Raised when paging parameters are invalid."""
-
-    pass
-
-
-class FilterValidationError(ValidationError):
-    """Raised when filter parameters are invalid."""
-
-    pass
+from kavak_lite.domain.errors import ValidationError
 
 
 @dataclass(frozen=True)
@@ -48,34 +25,75 @@ class CatalogFilters:
     price_max: Decimal | None = None
 
     def validate(self) -> None:
-        """
-        Validate filter parameters.
+        """Validate filter parameters.
 
         Raises:
-            FilterValidationError: If filter parameters are invalid
+            ValidationError: If filter parameters are invalid (with structured errors)
         """
+        errors = []
+
         # Guardrails: prevent float leakage past boundary
         if self.price_min is not None and not isinstance(self.price_min, Decimal):
-            raise FilterValidationError(
-                "price_min must be Decimal or None (no floats past the boundary)"
+            errors.append(
+                {
+                    "field": "price_min",
+                    "message": "Must be Decimal or None (no floats past the boundary)",
+                    "code": "INVALID_TYPE",
+                }
             )
         if self.price_max is not None and not isinstance(self.price_max, Decimal):
-            raise FilterValidationError(
-                "price_max must be Decimal or None (no floats past the boundary)"
+            errors.append(
+                {
+                    "field": "price_max",
+                    "message": "Must be Decimal or None (no floats past the boundary)",
+                    "code": "INVALID_TYPE",
+                }
             )
 
+        # Cross-field validation: year range
         if (
             self.year_min is not None
             and self.year_max is not None
             and self.year_min > self.year_max
         ):
-            raise FilterValidationError("year_min cannot be greater than year_max")
+            errors.append(
+                {
+                    "field": "year_min",
+                    "message": "Must be less than or equal to year_max",
+                    "code": "INVALID_RANGE",
+                }
+            )
+            errors.append(
+                {
+                    "field": "year_max",
+                    "message": "Must be greater than or equal to year_min",
+                    "code": "INVALID_RANGE",
+                }
+            )
+
+        # Cross-field validation: price range
         if (
             self.price_min is not None
             and self.price_max is not None
             and self.price_min > self.price_max
         ):
-            raise FilterValidationError("price_min cannot be greater than price_max")
+            errors.append(
+                {
+                    "field": "price_min",
+                    "message": "Must be less than or equal to price_max",
+                    "code": "INVALID_RANGE",
+                }
+            )
+            errors.append(
+                {
+                    "field": "price_max",
+                    "message": "Must be greater than or equal to price_min",
+                    "code": "INVALID_RANGE",
+                }
+            )
+
+        if errors:
+            raise ValidationError(errors=errors)
 
 
 @dataclass(frozen=True, slots=True)
@@ -84,16 +102,39 @@ class Paging:
     limit: int = 20
 
     def validate(self) -> None:
-        """
-        Validate paging parameters.
+        """Validate paging parameters.
 
         Raises:
-            PagingValidationError: If paging parameters are invalid
+            ValidationError: If paging parameters are invalid (with structured errors)
         """
+        errors = []
+
         if self.offset < 0:
-            raise PagingValidationError("offset must be >= 0")
+            errors.append(
+                {
+                    "field": "offset",
+                    "message": "Must be greater than or equal to 0",
+                    "code": "INVALID_VALUE",
+                }
+            )
+
         if self.limit <= 0:
-            raise PagingValidationError("limit must be > 0")
-        # Keep it reasonable; tweak if you already have a global constant
+            errors.append(
+                {
+                    "field": "limit",
+                    "message": "Must be greater than 0",
+                    "code": "INVALID_VALUE",
+                }
+            )
+
         if self.limit > 200:
-            raise PagingValidationError("limit must be <= 200")
+            errors.append(
+                {
+                    "field": "limit",
+                    "message": "Must be less than or equal to 200",
+                    "code": "INVALID_VALUE",
+                }
+            )
+
+        if errors:
+            raise ValidationError(errors=errors)

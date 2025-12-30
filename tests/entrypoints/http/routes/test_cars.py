@@ -20,7 +20,8 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from kavak_lite.domain.car import Car, FilterValidationError, PagingValidationError
+from kavak_lite.domain.car import Car
+from kavak_lite.domain.errors import ValidationError
 from kavak_lite.entrypoints.http.dependencies import get_search_catalog_use_case
 from kavak_lite.entrypoints.http.routes.cars import router
 from kavak_lite.use_cases.search_car_catalog import SearchCarCatalogResponse
@@ -28,8 +29,11 @@ from kavak_lite.use_cases.search_car_catalog import SearchCarCatalogResponse
 
 @pytest.fixture
 def app() -> FastAPI:
-    """Create a test FastAPI app with cars router."""
+    """Create a test FastAPI app with cars router and exception handlers."""
+    from kavak_lite.entrypoints.http.exception_handlers import register_exception_handlers
+
     test_app = FastAPI()
+    register_exception_handlers(test_app)
     test_app.include_router(router, prefix="/v1")
     return test_app
 
@@ -332,14 +336,21 @@ def test_get_cars_rejects_price_with_too_many_decimals(
 def test_get_cars_handles_domain_filter_validation_error(
     app: FastAPI, client: TestClient, mock_use_case: Mock
 ) -> None:
-    """Route handles domain validation errors from use case (year_min > year_max).
-
-    NOTE: Without global error handlers (per ADR), domain validation errors
-    currently result in 500. Once error handlers are added, this should be 422.
-    """
-    # Mock use case to raise domain validation error
-    mock_use_case.execute.side_effect = FilterValidationError(
-        "year_min cannot be greater than year_max"
+    """Route handles domain validation errors from use case (year_min > year_max)."""
+    # Mock use case to raise domain validation error with structured errors
+    mock_use_case.execute.side_effect = ValidationError(
+        errors=[
+            {
+                "field": "year_min",
+                "message": "Must be less than or equal to year_max",
+                "code": "INVALID_RANGE",
+            },
+            {
+                "field": "year_max",
+                "message": "Must be greater than or equal to year_min",
+                "code": "INVALID_RANGE",
+            },
+        ]
     )
 
     app.dependency_overrides[get_search_catalog_use_case] = lambda: mock_use_case
@@ -352,9 +363,13 @@ def test_get_cars_handles_domain_filter_validation_error(
         },
     )
 
-    # TODO: Once global error handlers are added per ADR, update this to assert 422
-    # For now, unhandled domain errors result in 500
-    assert response.status_code == 500
+    assert response.status_code == 422
+    data = response.json()
+
+    assert data["detail"] == "Validation failed"
+    assert data["code"] == "VALIDATION_ERROR"
+    assert "errors" in data
+    assert len(data["errors"]) == 2
 
 
 def test_get_cars_handles_domain_paging_validation_error(
@@ -366,7 +381,15 @@ def test_get_cars_handles_domain_paging_validation_error(
     so this test validates that if a paging error somehow reaches the route,
     it results in an error response.
     """
-    mock_use_case.execute.side_effect = PagingValidationError("limit must be <= 200")
+    mock_use_case.execute.side_effect = ValidationError(
+        errors=[
+            {
+                "field": "limit",
+                "message": "Must be less than or equal to 200",
+                "code": "INVALID_VALUE",
+            }
+        ]
+    )
 
     app.dependency_overrides[get_search_catalog_use_case] = lambda: mock_use_case
 
@@ -376,9 +399,12 @@ def test_get_cars_handles_domain_paging_validation_error(
         params={"limit": 50},  # Valid limit, but use case will raise error
     )
 
-    # TODO: Once global error handlers are added per ADR, update this to assert 422
-    # For now, unhandled domain errors result in 500
-    assert response.status_code == 500
+    assert response.status_code == 422
+    data = response.json()
+
+    assert data["detail"] == "Validation failed"
+    assert data["code"] == "VALIDATION_ERROR"
+    assert "errors" in data
 
 
 # ==============================================================================

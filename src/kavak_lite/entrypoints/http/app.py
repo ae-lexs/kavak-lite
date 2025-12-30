@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 
-
-from kavak_lite.entrypoints.http.routes.health import router as health_router
+from kavak_lite.entrypoints.http.exception_handlers import register_exception_handlers
 from kavak_lite.entrypoints.http.routes.cars import router as cars_router
+from kavak_lite.entrypoints.http.routes.health import router as health_router
 
 
 def build_app() -> FastAPI:
@@ -21,6 +21,10 @@ def build_app() -> FastAPI:
 
         ## Rate Limiting
         No rate limits currently enforced.
+
+        ## Error Handling
+        All errors return structured JSON responses with error codes.
+        See the error response schemas in the API documentation.
         """,
         version="0.1.0",
         docs_url="/docs",  # Swagger UI
@@ -35,6 +39,10 @@ def build_app() -> FastAPI:
         },
     )
 
+    # Register global exception handlers
+    register_exception_handlers(app)
+
+    # Register routers
     app.include_router(health_router)
     app.include_router(cars_router, prefix="/v1")
 

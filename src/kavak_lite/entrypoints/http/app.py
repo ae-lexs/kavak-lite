@@ -2,6 +2,7 @@ from fastapi import FastAPI
 
 from kavak_lite.entrypoints.http.exception_handlers import register_exception_handlers
 from kavak_lite.entrypoints.http.routes.cars import router as cars_router
+from kavak_lite.entrypoints.http.routes.financing import router as financing_router
 from kavak_lite.entrypoints.http.routes.health import router as health_router
 
 
@@ -45,6 +46,7 @@ def build_app() -> FastAPI:
     # Register routers
     app.include_router(health_router)
     app.include_router(cars_router, prefix="/v1")
+    app.include_router(financing_router, prefix="/v1")
 
     return app
 

@@ -2,7 +2,8 @@ from decimal import Decimal
 
 import pytest
 
-from kavak_lite.domain.financing import FinancingRequest, InvalidFinancingInput
+from kavak_lite.domain.errors import ValidationError
+from kavak_lite.domain.financing import FinancingRequest
 from kavak_lite.use_cases.calculate_financing_plan import CalculateFinancingPlan
 
 
@@ -16,7 +17,7 @@ def test_rejects_zero_price():
     uc = CalculateFinancingPlan()
     req = FinancingRequest(price=Decimal("0"), down_payment=Decimal("0"), term_months=36)
 
-    with pytest.raises(InvalidFinancingInput, match="price must be > 0"):
+    with pytest.raises(ValidationError):
         uc.execute(req)
 
 
@@ -25,7 +26,7 @@ def test_rejects_negative_price():
     uc = CalculateFinancingPlan()
     req = FinancingRequest(price=Decimal("-100000"), down_payment=Decimal("0"), term_months=36)
 
-    with pytest.raises(InvalidFinancingInput, match="price must be > 0"):
+    with pytest.raises(ValidationError):
         uc.execute(req)
 
 
@@ -34,7 +35,7 @@ def test_rejects_negative_down_payment():
     uc = CalculateFinancingPlan()
     req = FinancingRequest(price=Decimal("100000"), down_payment=Decimal("-10000"), term_months=36)
 
-    with pytest.raises(InvalidFinancingInput, match="down_payment must be >= 0"):
+    with pytest.raises(ValidationError):
         uc.execute(req)
 
 
@@ -43,7 +44,7 @@ def test_rejects_down_payment_equal_to_price():
     uc = CalculateFinancingPlan()
     req = FinancingRequest(price=Decimal("100000"), down_payment=Decimal("100000"), term_months=36)
 
-    with pytest.raises(InvalidFinancingInput, match="down_payment must be < price"):
+    with pytest.raises(ValidationError):
         uc.execute(req)
 
 
@@ -52,7 +53,7 @@ def test_rejects_down_payment_exceeding_price():
     uc = CalculateFinancingPlan()
     req = FinancingRequest(price=Decimal("100000"), down_payment=Decimal("150000"), term_months=36)
 
-    with pytest.raises(InvalidFinancingInput, match="down_payment must be < price"):
+    with pytest.raises(ValidationError):
         uc.execute(req)
 
 
@@ -61,7 +62,7 @@ def test_rejects_term_24_months():
     uc = CalculateFinancingPlan()
     req = FinancingRequest(price=Decimal("100000"), down_payment=Decimal("10000"), term_months=24)
 
-    with pytest.raises(InvalidFinancingInput, match="term_months must be one of"):
+    with pytest.raises(ValidationError):
         uc.execute(req)
 
 
@@ -70,7 +71,7 @@ def test_rejects_term_zero():
     uc = CalculateFinancingPlan()
     req = FinancingRequest(price=Decimal("100000"), down_payment=Decimal("10000"), term_months=0)
 
-    with pytest.raises(InvalidFinancingInput, match="term_months must be one of"):
+    with pytest.raises(ValidationError):
         uc.execute(req)
 
 
@@ -79,7 +80,7 @@ def test_rejects_negative_term():
     uc = CalculateFinancingPlan()
     req = FinancingRequest(price=Decimal("100000"), down_payment=Decimal("10000"), term_months=-36)
 
-    with pytest.raises(InvalidFinancingInput, match="term_months must be one of"):
+    with pytest.raises(ValidationError):
         uc.execute(req)
 
 

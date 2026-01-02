@@ -18,7 +18,7 @@ class FinancingRequest:
 
     def validate(self) -> None:
         """Validate financing request parameters
-        
+
         Raises:
             ValidationError: If request parameters are invalid
         """
@@ -56,7 +56,7 @@ class FinancingRequest:
                     "code": "INVALID_VALUE",
                 }
             )
-        
+
         if errors:
             raise ValidationError(errors=errors)
 

@@ -16,6 +16,7 @@ from kavak_lite.adapters.postgres_car_catalog_repository import (
     PostgresCarCatalogRepository,
 )
 from kavak_lite.infra.db.session import get_session
+from kavak_lite.use_cases.calculate_financing_plan import CalculateFinancingPlan
 from kavak_lite.use_cases.search_car_catalog import SearchCarCatalog
 
 
@@ -58,3 +59,16 @@ def get_search_catalog_use_case(db: Session = Depends(get_db)) -> SearchCarCatal
     """
     repository = PostgresCarCatalogRepository(session=db)
     return SearchCarCatalog(car_catalog_repository=repository)
+
+
+def get_calculate_financing_plan_use_case() -> CalculateFinancingPlan:
+    """
+    Factory function that returns a configured CalculateFinancingPlan use case.
+
+    This function is called per-request. Since CalculateFinancingPlan is stateless
+    and has no dependencies, we can return a new instance each time.
+
+    Returns:
+        CalculateFinancingPlan: Configured use case instance
+    """
+    return CalculateFinancingPlan()

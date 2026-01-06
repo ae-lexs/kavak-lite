@@ -28,6 +28,18 @@ class InMemoryCarCatalogRepository(CarCatalogRepository):
 
         return SearchResult(cars=paginated_cars, total_count=total_count)
 
+    def get_by_id(self, car_id: str) -> Car | None:
+        """
+        Get car by ID.
+
+        Args:
+            car_id: Car ID
+
+        Returns:
+            Car entity if found, None otherwise
+        """
+        return next((car for car in self._cars if car.id == car_id), None)
+
     def _matches(self, car: Car, filters: CatalogFilters) -> bool:
         if filters.make and car.make.lower() != filters.make.lower():
             return False

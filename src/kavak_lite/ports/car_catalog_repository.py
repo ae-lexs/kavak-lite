@@ -43,3 +43,16 @@ class CarCatalogRepository(ABC):
             SearchResult containing matching cars and optional total count
         """
         ...
+
+    @abstractmethod
+    def get_by_id(self, car_id: str) -> Car | None:
+        """
+        Get a car by its ID.
+
+        Args:
+            car_id: The car ID (expected to be a valid UUID string)
+
+        Returns:
+            Car entity if found, None otherwise
+        """
+        ...

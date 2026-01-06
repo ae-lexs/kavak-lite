@@ -7,6 +7,21 @@ class CarResponseDTO(BaseModel):
     model: str
     year: int
     price: str
+    trim: str | None = Field(None, description="Vehicle trim level")
+    mileage_km: int | None = Field(None, description="Mileage in kilometers")
+    transmission: str | None = Field(
+        None, description="Transmission type", examples=["Automático", "Manual", "CVT"]
+    )
+    fuel_type: str | None = Field(
+        None, description="Fuel type", examples=["Gasolina", "Diésel", "Híbrido", "Eléctrico"]
+    )
+    body_type: str | None = Field(
+        None, description="Body type", examples=["Sedán", "SUV", "Hatchback", "Pick-up"]
+    )
+    location: str | None = Field(
+        None, description="Car location", examples=["CDMX", "Guadalajara", "Monterrey"]
+    )
+    url: str | None = Field(None, description="URL to car details page")
 
 
 class CarsSearchQueryDTO(BaseModel):

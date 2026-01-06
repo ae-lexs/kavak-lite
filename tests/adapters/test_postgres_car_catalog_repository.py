@@ -8,6 +8,7 @@ Tests verify:
 - COUNT(*) query is executed for total_count
 - Paging (OFFSET/LIMIT) is applied correctly
 - Type conversions (UUID → string, NUMERIC → Decimal) work
+- get_by_id retrieval with UUID handling
 
 See: docs/adr/12-25-25-car-catalog-search.md
 """
@@ -345,3 +346,129 @@ def test_to_domain_handles_various_uuids() -> None:
 
     assert car.id == str(test_uuid)
     assert uuid.UUID(car.id) == test_uuid
+
+
+# ==============================================================================
+# get_by_id Tests
+# ==============================================================================
+
+
+def test_get_by_id_returns_car_when_found(
+    mock_session: Mock, sample_car_rows: list[CarRow]
+) -> None:
+    """get_by_id returns Car entity when ID exists."""
+    # Mock query result
+    result = Mock()
+    result.scalar_one_or_none.return_value = sample_car_rows[0]
+
+    mock_session.execute.return_value = result
+
+    repo = PostgresCarCatalogRepository(mock_session)
+
+    car = repo.get_by_id("00000000-0000-0000-0000-000000000001")
+
+    assert car is not None
+    assert isinstance(car, Car)
+    assert car.id == "00000000-0000-0000-0000-000000000001"
+    assert car.make == "Toyota"
+    assert car.model == "Corolla"
+    assert car.year == 2018
+    assert car.price == Decimal("250000.00")
+
+
+def test_get_by_id_returns_none_when_not_found(mock_session: Mock) -> None:
+    """get_by_id returns None when car does not exist."""
+    # Mock query result - no car found
+    result = Mock()
+    result.scalar_one_or_none.return_value = None
+
+    mock_session.execute.return_value = result
+
+    repo = PostgresCarCatalogRepository(mock_session)
+
+    car = repo.get_by_id("00000000-0000-0000-0000-999999999999")
+
+    assert car is None
+
+
+def test_get_by_id_returns_none_for_invalid_uuid(mock_session: Mock) -> None:
+    """get_by_id returns None for invalid UUID format."""
+    repo = PostgresCarCatalogRepository(mock_session)
+
+    # Should not raise exception, just return None
+    car = repo.get_by_id("not-a-valid-uuid")
+
+    assert car is None
+    # Session.execute should not be called for invalid UUID
+    mock_session.execute.assert_not_called()
+
+
+def test_get_by_id_executes_query(mock_session: Mock) -> None:
+    """get_by_id executes SQL query with correct UUID filter."""
+    result = Mock()
+    result.scalar_one_or_none.return_value = None
+
+    mock_session.execute.return_value = result
+
+    repo = PostgresCarCatalogRepository(mock_session)
+
+    test_uuid = "00000000-0000-0000-0000-000000000001"
+    repo.get_by_id(test_uuid)
+
+    # Verify session.execute was called
+    mock_session.execute.assert_called_once()
+
+
+def test_get_by_id_converts_uuid_to_string(
+    mock_session: Mock, sample_car_rows: list[CarRow]
+) -> None:
+    """get_by_id converts UUID to string in returned Car entity."""
+    result = Mock()
+    result.scalar_one_or_none.return_value = sample_car_rows[1]
+
+    mock_session.execute.return_value = result
+
+    repo = PostgresCarCatalogRepository(mock_session)
+
+    car = repo.get_by_id("00000000-0000-0000-0000-000000000002")
+
+    assert car is not None
+    assert isinstance(car.id, str)
+    # Verify it's a valid UUID string
+    uuid.UUID(car.id)
+
+
+def test_get_by_id_preserves_decimal_price(
+    mock_session: Mock, sample_car_rows: list[CarRow]
+) -> None:
+    """get_by_id preserves Decimal type for price."""
+    result = Mock()
+    result.scalar_one_or_none.return_value = sample_car_rows[0]
+
+    mock_session.execute.return_value = result
+
+    repo = PostgresCarCatalogRepository(mock_session)
+
+    car = repo.get_by_id("00000000-0000-0000-0000-000000000001")
+
+    assert car is not None
+    assert isinstance(car.price, Decimal)
+    assert car.price == Decimal("250000.00")
+
+
+def test_get_by_id_returns_domain_entity_not_row(
+    mock_session: Mock, sample_car_rows: list[CarRow]
+) -> None:
+    """get_by_id returns Car domain entity, not CarRow."""
+    result = Mock()
+    result.scalar_one_or_none.return_value = sample_car_rows[0]
+
+    mock_session.execute.return_value = result
+
+    repo = PostgresCarCatalogRepository(mock_session)
+
+    car = repo.get_by_id("00000000-0000-0000-0000-000000000001")
+
+    assert car is not None
+    assert isinstance(car, Car)
+    assert not isinstance(car, CarRow)

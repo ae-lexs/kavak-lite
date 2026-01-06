@@ -4,6 +4,8 @@ Unit tests for FastAPI dependency injection functions.
 This test suite verifies the dependency wiring logic per the Database Session Per-Request ADR:
 - get_db() yields a database session per request
 - get_search_catalog_use_case() creates properly wired use case with repository
+- get_get_car_by_id_use_case() creates properly wired use case with repository
+- get_calculate_financing_plan_use_case() creates stateless use case
 - No caching of sessions or stateful objects
 - Each request gets fresh instances
 
@@ -21,9 +23,13 @@ from kavak_lite.adapters.postgres_car_catalog_repository import (
     PostgresCarCatalogRepository,
 )
 from kavak_lite.entrypoints.http.dependencies import (
+    get_calculate_financing_plan_use_case,
     get_db,
+    get_get_car_by_id_use_case,
     get_search_catalog_use_case,
 )
+from kavak_lite.use_cases.calculate_financing_plan import CalculateFinancingPlan
+from kavak_lite.use_cases.get_car_by_id import GetCarById
 from kavak_lite.use_cases.search_car_catalog import SearchCarCatalog
 
 
@@ -142,8 +148,8 @@ def test_get_search_catalog_use_case_creates_use_case_with_repository() -> None:
     assert isinstance(use_case, SearchCarCatalog)
 
     # Verify use case has repository
-    assert hasattr(use_case, "_car_catalog_repository")
-    repository = use_case._car_catalog_repository
+    assert hasattr(use_case, "_repository")
+    repository = use_case._repository
 
     # Verify repository is correct type
     assert isinstance(repository, PostgresCarCatalogRepository)
@@ -168,11 +174,11 @@ def test_get_search_catalog_use_case_creates_fresh_instance_each_call() -> None:
     assert use_case_1 is not use_case_2
 
     # Verify different repositories
-    assert use_case_1._car_catalog_repository is not use_case_2._car_catalog_repository
+    assert use_case_1._repository is not use_case_2._repository
 
     # Verify each has correct session
-    assert use_case_1._car_catalog_repository._session is mock_session_1
-    assert use_case_2._car_catalog_repository._session is mock_session_2
+    assert use_case_1._repository._session is mock_session_1
+    assert use_case_2._repository._session is mock_session_2
 
 
 def test_get_search_catalog_use_case_wires_dependencies_correctly() -> None:
@@ -186,7 +192,7 @@ def test_get_search_catalog_use_case_wires_dependencies_correctly() -> None:
     assert isinstance(use_case, SearchCarCatalog)
 
     # 2. UseCase has Repository
-    repository = use_case._car_catalog_repository
+    repository = use_case._repository
     assert isinstance(repository, PostgresCarCatalogRepository)
 
     # 3. Repository has Session
@@ -201,7 +207,143 @@ def test_get_search_catalog_use_case_accepts_session_parameter() -> None:
     use_case = get_search_catalog_use_case(db=mock_session)
 
     # Verify it was used
-    assert use_case._car_catalog_repository._session is mock_session
+    assert use_case._repository._session is mock_session
+
+
+# ==============================================================================
+# get_get_car_by_id_use_case() - Use Case Factory
+# ==============================================================================
+
+
+def test_get_get_car_by_id_use_case_creates_use_case_with_repository() -> None:
+    """Factory creates GetCarById use case with PostgresCarCatalogRepository."""
+    mock_session = Mock()
+
+    # Call the factory
+    use_case = get_get_car_by_id_use_case(db=mock_session)
+
+    # Verify use case is correct type
+    assert isinstance(use_case, GetCarById)
+
+    # Verify use case has repository
+    assert hasattr(use_case, "_repository")
+    repository = use_case._repository
+
+    # Verify repository is correct type
+    assert isinstance(repository, PostgresCarCatalogRepository)
+
+    # Verify repository has the session
+    assert hasattr(repository, "_session")
+    assert repository._session is mock_session
+
+
+def test_get_get_car_by_id_use_case_creates_fresh_instance_each_call() -> None:
+    """Factory creates new use case instance for each call (not cached)."""
+    mock_session_1 = Mock()
+    mock_session_2 = Mock()
+
+    # First call
+    use_case_1 = get_get_car_by_id_use_case(db=mock_session_1)
+
+    # Second call
+    use_case_2 = get_get_car_by_id_use_case(db=mock_session_2)
+
+    # Verify different instances
+    assert use_case_1 is not use_case_2
+
+    # Verify different repositories
+    assert use_case_1._repository is not use_case_2._repository
+
+    # Verify each has correct session
+    assert use_case_1._repository._session is mock_session_1
+    assert use_case_2._repository._session is mock_session_2
+
+
+def test_get_get_car_by_id_use_case_wires_dependencies_correctly() -> None:
+    """Factory wires dependencies in correct order: Session → Repository → UseCase."""
+    mock_session = Mock()
+
+    use_case = get_get_car_by_id_use_case(db=mock_session)
+
+    # Verify dependency chain: Session → Repository → UseCase
+    # 1. UseCase exists
+    assert isinstance(use_case, GetCarById)
+
+    # 2. UseCase has Repository
+    repository = use_case._repository
+    assert isinstance(repository, PostgresCarCatalogRepository)
+
+    # 3. Repository has Session
+    assert repository._session is mock_session
+
+
+def test_get_get_car_by_id_use_case_accepts_session_parameter() -> None:
+    """Factory accepts db parameter (injected by FastAPI via Depends(get_db))."""
+    mock_session = Mock()
+
+    # Should accept session as parameter
+    use_case = get_get_car_by_id_use_case(db=mock_session)
+
+    # Verify it was used
+    assert use_case._repository._session is mock_session
+
+
+def test_get_get_car_by_id_use_case_return_type_annotation() -> None:
+    """get_get_car_by_id_use_case() has correct return type annotation."""
+    from typing import get_type_hints
+
+    hints = get_type_hints(get_get_car_by_id_use_case)
+    assert "return" in hints
+    assert hints["return"] == GetCarById
+
+
+# ==============================================================================
+# get_calculate_financing_plan_use_case() - Use Case Factory
+# ==============================================================================
+
+
+def test_get_calculate_financing_plan_use_case_creates_use_case() -> None:
+    """Factory creates CalculateFinancingPlan use case."""
+    use_case = get_calculate_financing_plan_use_case()
+
+    # Verify use case is correct type
+    assert isinstance(use_case, CalculateFinancingPlan)
+
+
+def test_get_calculate_financing_plan_use_case_creates_fresh_instance_each_call() -> None:
+    """Factory creates new use case instance for each call (not cached)."""
+    # First call
+    use_case_1 = get_calculate_financing_plan_use_case()
+
+    # Second call
+    use_case_2 = get_calculate_financing_plan_use_case()
+
+    # Verify different instances (even though it's stateless)
+    assert use_case_1 is not use_case_2
+
+
+def test_get_calculate_financing_plan_use_case_has_no_dependencies() -> None:
+    """Factory creates CalculateFinancingPlan without dependencies (stateless)."""
+    # Should work without any parameters
+    use_case = get_calculate_financing_plan_use_case()
+
+    # Verify it was created
+    assert isinstance(use_case, CalculateFinancingPlan)
+
+
+def test_get_calculate_financing_plan_use_case_return_type_annotation() -> None:
+    """get_calculate_financing_plan_use_case() has correct return type annotation."""
+    from typing import get_type_hints
+
+    hints = get_type_hints(get_calculate_financing_plan_use_case)
+    assert "return" in hints
+    assert hints["return"] == CalculateFinancingPlan
+
+
+def test_get_calculate_financing_plan_use_case_is_not_cached() -> None:
+    """CalculateFinancingPlan factory is not cached (per-request instance)."""
+    # Verify it's not decorated with lru_cache
+    assert not hasattr(get_calculate_financing_plan_use_case, "__wrapped__")
 
 
 # ==============================================================================
@@ -228,8 +370,8 @@ def test_dependency_chain_get_db_to_use_case() -> None:
         use_case = get_search_catalog_use_case(db=session)
 
         # Verify use case has the session from get_db
-        assert use_case._car_catalog_repository._session is session
-        assert use_case._car_catalog_repository._session is mock_session
+        assert use_case._repository._session is session
+        assert use_case._repository._session is mock_session
 
 
 # ==============================================================================
@@ -251,17 +393,14 @@ def test_multiple_requests_get_isolated_dependencies() -> None:
 
     # Verify complete isolation
     assert use_case_1 is not use_case_2  # Different use cases
+    assert use_case_1._repository is not use_case_2._repository  # Different repos
     assert (
-        use_case_1._car_catalog_repository is not use_case_2._car_catalog_repository
-    )  # Different repos
-    assert (
-        use_case_1._car_catalog_repository._session
-        is not use_case_2._car_catalog_repository._session
+        use_case_1._repository._session is not use_case_2._repository._session
     )  # Different sessions
 
     # Verify each request has its own session
-    assert use_case_1._car_catalog_repository._session is mock_session_1
-    assert use_case_2._car_catalog_repository._session is mock_session_2
+    assert use_case_1._repository._session is mock_session_1
+    assert use_case_2._repository._session is mock_session_2
 
 
 def test_dependencies_are_not_cached() -> None:
@@ -270,8 +409,10 @@ def test_dependencies_are_not_cached() -> None:
     # Verify get_db is not decorated with lru_cache
     assert not hasattr(get_db, "__wrapped__")  # lru_cache adds __wrapped__
 
-    # Verify get_search_catalog_use_case is not decorated with lru_cache
+    # Verify use case factories are not decorated with lru_cache
     assert not hasattr(get_search_catalog_use_case, "__wrapped__")
+    assert not hasattr(get_get_car_by_id_use_case, "__wrapped__")
+    assert not hasattr(get_calculate_financing_plan_use_case, "__wrapped__")
 
 
 # ==============================================================================

@@ -13,6 +13,13 @@ class Car:
     model: str
     year: int
     price: Decimal
+    trim: str | None = None
+    mileage_km: int | None = None
+    transmission: str | None = None
+    fuel_type: str | None = None
+    body_type: str | None = None
+    location: str | None = None
+    url: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

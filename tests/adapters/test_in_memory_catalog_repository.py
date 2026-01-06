@@ -9,6 +9,8 @@ Test sections:
 - Paging Edge Cases: Tests for pagination behavior (offset, limit, boundaries)
 - Decimal Precision: Tests for exact Decimal arithmetic (no float approximation)
 - Empty Repository: Tests for edge case of empty data set
+- Metadata - total_count: Tests for total_count behavior with filters and paging
+- get_by_id: Tests for retrieving individual cars by ID
 """
 
 from __future__ import annotations
@@ -457,3 +459,72 @@ def test_search_result_structure(cars: list[Car]) -> None:
     assert isinstance(result.cars, list)
     assert isinstance(result.total_count, int)
     assert result.total_count is not None
+
+
+# ==============================================================================
+# get_by_id
+# ==============================================================================
+
+
+def test_get_by_id_returns_car_when_found(cars: list[Car]) -> None:
+    """get_by_id returns the correct car when ID exists."""
+    repo = InMemoryCarCatalogRepository(cars)
+
+    car = repo.get_by_id("3")
+
+    assert car is not None
+    assert car.id == "3"
+    assert car.make == "Honda"
+    assert car.model == "Civic"
+    assert car.year == 2019
+    assert car.price == Decimal("280000.00")
+
+
+def test_get_by_id_returns_none_when_not_found(cars: list[Car]) -> None:
+    """get_by_id returns None when car ID does not exist."""
+    repo = InMemoryCarCatalogRepository(cars)
+
+    car = repo.get_by_id("999")
+
+    assert car is None
+
+
+def test_get_by_id_exact_match_required(cars: list[Car]) -> None:
+    """get_by_id requires exact ID match (case sensitive)."""
+    repo = InMemoryCarCatalogRepository(cars)
+
+    car = repo.get_by_id("1")
+    assert car is not None
+    assert car.id == "1"
+
+
+def test_get_by_id_empty_repository() -> None:
+    """get_by_id returns None when repository is empty."""
+    repo = InMemoryCarCatalogRepository([])
+
+    car = repo.get_by_id("1")
+
+    assert car is None
+
+
+def test_get_by_id_returns_first_car(cars: list[Car]) -> None:
+    """get_by_id can retrieve the first car in the repository."""
+    repo = InMemoryCarCatalogRepository(cars)
+
+    car = repo.get_by_id("1")
+
+    assert car is not None
+    assert car.id == "1"
+    assert car.make == "Toyota"
+
+
+def test_get_by_id_returns_last_car(cars: list[Car]) -> None:
+    """get_by_id can retrieve the last car in the repository."""
+    repo = InMemoryCarCatalogRepository(cars)
+
+    car = repo.get_by_id("5")
+
+    assert car is not None
+    assert car.id == "5"
+    assert car.make == "TOYOTA"
+    assert car.model == "corolla"

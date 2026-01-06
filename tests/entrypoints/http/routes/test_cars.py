@@ -21,9 +21,13 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from kavak_lite.domain.car import Car
-from kavak_lite.domain.errors import ValidationError
-from kavak_lite.entrypoints.http.dependencies import get_search_catalog_use_case
+from kavak_lite.domain.errors import NotFoundError, ValidationError
+from kavak_lite.entrypoints.http.dependencies import (
+    get_get_car_by_id_use_case,
+    get_search_catalog_use_case,
+)
 from kavak_lite.entrypoints.http.routes.cars import router
+from kavak_lite.use_cases.get_car_by_id import GetCarByIdResponse
 from kavak_lite.use_cases.search_car_catalog import SearchCarCatalogResponse
 
 
@@ -610,3 +614,241 @@ def test_get_cars_does_not_contain_business_logic(
     # All cars returned by use case should be in response (no filtering in route)
     data = response.json()
     assert len(data["cars"]) == len(sample_cars)
+
+
+# ==============================================================================
+# GET /v1/cars/{car_id} - Get Car By ID
+# ==============================================================================
+
+
+def test_get_car_by_id_success(app: FastAPI, client: TestClient) -> None:
+    """Route successfully retrieves car by ID."""
+    car = Car(
+        id="550e8400-e29b-41d4-a716-446655440000",
+        make="Toyota",
+        model="Corolla",
+        year=2020,
+        price=Decimal("25000.00"),
+        trim="XLE",
+        mileage_km=50000,
+        transmission="Automático",
+        fuel_type="Gasolina",
+        body_type="Sedán",
+        location="CDMX",
+        url="https://kavak.com/mx/toyota/corolla/2020",
+    )
+
+    mock_use_case = Mock()
+    mock_use_case.execute.return_value = GetCarByIdResponse(car=car)
+    app.dependency_overrides[get_get_car_by_id_use_case] = lambda: mock_use_case
+
+    response = client.get("/v1/cars/550e8400-e29b-41d4-a716-446655440000")
+
+    assert response.status_code == 200
+    data = response.json()
+
+    # Verify all fields are present
+    assert data["id"] == "550e8400-e29b-41d4-a716-446655440000"
+    assert data["brand"] == "Toyota"
+    assert data["model"] == "Corolla"
+    assert data["year"] == 2020
+    assert data["price"] == "25000.00"
+    assert data["trim"] == "XLE"
+    assert data["mileage_km"] == 50000
+    assert data["transmission"] == "Automático"
+    assert data["fuel_type"] == "Gasolina"
+    assert data["body_type"] == "Sedán"
+    assert data["location"] == "CDMX"
+    assert data["url"] == "https://kavak.com/mx/toyota/corolla/2020"
+
+    # Verify use case was called with correct car_id
+    mock_use_case.execute.assert_called_once()
+    call_args = mock_use_case.execute.call_args[0][0]
+    assert call_args.car_id == "550e8400-e29b-41d4-a716-446655440000"
+
+
+def test_get_car_by_id_not_found(app: FastAPI, client: TestClient) -> None:
+    """Route returns 404 when car not found."""
+    mock_use_case = Mock()
+    mock_use_case.execute.side_effect = NotFoundError("Car", "550e8400-e29b-41d4-a716-446655440000")
+    app.dependency_overrides[get_get_car_by_id_use_case] = lambda: mock_use_case
+
+    response = client.get("/v1/cars/550e8400-e29b-41d4-a716-446655440000")
+
+    assert response.status_code == 404
+    data = response.json()
+    assert data["code"] == "NOT_FOUND"
+    assert "550e8400-e29b-41d4-a716-446655440000" in data["detail"]
+
+
+def test_get_car_by_id_invalid_uuid_format(app: FastAPI, client: TestClient) -> None:
+    """Route returns 422 for invalid UUID format."""
+    mock_use_case = Mock()
+    mock_use_case.execute.side_effect = ValidationError(
+        errors=[
+            {
+                "field": "car_id",
+                "message": "Must be a valid UUID format",
+                "code": "INVALID_UUID",
+            }
+        ]
+    )
+    app.dependency_overrides[get_get_car_by_id_use_case] = lambda: mock_use_case
+
+    response = client.get("/v1/cars/not-a-uuid")
+
+    assert response.status_code == 422
+    data = response.json()
+    assert data["code"] == "VALIDATION_ERROR"
+    assert "errors" in data
+    assert data["errors"][0]["field"] == "car_id"
+    assert data["errors"][0]["code"] == "INVALID_UUID"
+
+
+def test_get_car_by_id_preserves_decimal_precision(app: FastAPI, client: TestClient) -> None:
+    """Route preserves decimal precision in price."""
+    car = Car(
+        id="550e8400-e29b-41d4-a716-446655440000",
+        make="Toyota",
+        model="Camry",
+        year=2020,
+        price=Decimal("25000.99"),
+    )
+
+    mock_use_case = Mock()
+    mock_use_case.execute.return_value = GetCarByIdResponse(car=car)
+    app.dependency_overrides[get_get_car_by_id_use_case] = lambda: mock_use_case
+
+    response = client.get("/v1/cars/550e8400-e29b-41d4-a716-446655440000")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["price"] == "25000.99"
+
+
+def test_get_car_by_id_response_structure(app: FastAPI, client: TestClient) -> None:
+    """Route returns response with correct structure."""
+    car = Car(
+        id="550e8400-e29b-41d4-a716-446655440000",
+        make="Toyota",
+        model="Corolla",
+        year=2020,
+        price=Decimal("25000.00"),
+    )
+
+    mock_use_case = Mock()
+    mock_use_case.execute.return_value = GetCarByIdResponse(car=car)
+    app.dependency_overrides[get_get_car_by_id_use_case] = lambda: mock_use_case
+
+    response = client.get("/v1/cars/550e8400-e29b-41d4-a716-446655440000")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "application/json"
+
+    data = response.json()
+
+    # Verify required fields
+    assert "id" in data
+    assert "brand" in data
+    assert "model" in data
+    assert "year" in data
+    assert "price" in data
+
+    # Verify types
+    assert isinstance(data["id"], str)
+    assert isinstance(data["brand"], str)
+    assert isinstance(data["model"], str)
+    assert isinstance(data["year"], int)
+    assert isinstance(data["price"], str)
+
+
+def test_get_car_by_id_uses_dependency_injection(app: FastAPI, client: TestClient) -> None:
+    """Route uses dependency injection for use case."""
+    car = Car(
+        id="550e8400-e29b-41d4-a716-446655440000",
+        make="Toyota",
+        model="Corolla",
+        year=2020,
+        price=Decimal("25000.00"),
+    )
+
+    mock_use_case = Mock()
+    mock_use_case.execute.return_value = GetCarByIdResponse(car=car)
+    app.dependency_overrides[get_get_car_by_id_use_case] = lambda: mock_use_case
+
+    response = client.get("/v1/cars/550e8400-e29b-41d4-a716-446655440000")
+
+    assert response.status_code == 200
+
+    # Verify use case was called exactly once
+    mock_use_case.execute.assert_called_once()
+
+
+def test_get_car_by_id_follows_parse_execute_map_return_pattern(
+    app: FastAPI, client: TestClient
+) -> None:
+    """Route follows parse → execute → map → return pattern."""
+    car = Car(
+        id="550e8400-e29b-41d4-a716-446655440000",
+        make="Toyota",
+        model="Corolla",
+        year=2020,
+        price=Decimal("25000.00"),
+    )
+
+    mock_use_case = Mock()
+    mock_use_case.execute.return_value = GetCarByIdResponse(car=car)
+    app.dependency_overrides[get_get_car_by_id_use_case] = lambda: mock_use_case
+
+    # Make request
+    response = client.get("/v1/cars/550e8400-e29b-41d4-a716-446655440000")
+
+    assert response.status_code == 200
+
+    # 1. Parse: FastAPI extracted car_id from path ✓
+    # 2. Execute: Use case was called
+    mock_use_case.execute.assert_called_once()
+
+    # 3. Map: Response was mapped to DTO
+    data = response.json()
+    assert data["brand"] == "Toyota"  # Domain 'make' → DTO 'brand'
+
+    # 4. Return: HTTP response returned ✓
+    assert response.headers["content-type"] == "application/json"
+
+
+def test_get_car_by_id_handles_optional_fields(app: FastAPI, client: TestClient) -> None:
+    """Route correctly handles cars with optional fields."""
+    # Car with only required fields
+    car = Car(
+        id="550e8400-e29b-41d4-a716-446655440000",
+        make="Toyota",
+        model="Corolla",
+        year=2020,
+        price=Decimal("25000.00"),
+    )
+
+    mock_use_case = Mock()
+    mock_use_case.execute.return_value = GetCarByIdResponse(car=car)
+    app.dependency_overrides[get_get_car_by_id_use_case] = lambda: mock_use_case
+
+    response = client.get("/v1/cars/550e8400-e29b-41d4-a716-446655440000")
+
+    assert response.status_code == 200
+    data = response.json()
+
+    # Required fields should be present
+    assert data["id"] == "550e8400-e29b-41d4-a716-446655440000"
+    assert data["brand"] == "Toyota"
+    assert data["model"] == "Corolla"
+    assert data["year"] == 2020
+    assert data["price"] == "25000.00"
+
+    # Optional fields may be None
+    assert data.get("trim") is None
+    assert data.get("mileage_km") is None
+    assert data.get("transmission") is None
+    assert data.get("fuel_type") is None
+    assert data.get("body_type") is None
+    assert data.get("location") is None
+    assert data.get("url") is None

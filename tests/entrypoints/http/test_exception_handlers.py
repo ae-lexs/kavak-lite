@@ -1,18 +1,29 @@
 """Tests for FastAPI exception handlers."""
 
+from unittest.mock import Mock, patch
+
 import pytest
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.testclient import TestClient
+from pydantic import ValidationError as PydanticValidationError
 
 from kavak_lite.domain.errors import (
     ConflictError,
+    DomainError,
     ForbiddenError,
     InternalError,
     NotFoundError,
     UnauthorizedError,
     ValidationError,
 )
-from kavak_lite.entrypoints.http.exception_handlers import register_exception_handlers
+from kavak_lite.entrypoints.http.exception_handlers import (
+    handle_domain_error,
+    handle_request_validation_error,
+    handle_unexpected_error,
+    handle_value_error,
+    register_exception_handlers,
+)
 
 
 @pytest.fixture
@@ -304,3 +315,399 @@ class TestErrorResponseFormat:
             # code is optional
             if "code" in error:
                 assert isinstance(error["code"], str)
+
+
+# ==============================================================================
+# Direct Handler Function Tests
+# ==============================================================================
+
+
+class TestHandleDomainErrorDirectly:
+    """Tests for handle_domain_error function directly."""
+
+    @pytest.mark.anyio
+    async def test_handle_domain_error_returns_json_response(self) -> None:
+        """handle_domain_error returns JSONResponse with correct structure."""
+        mock_request = Mock(spec=Request)
+        mock_request.url.path = "/test"
+        mock_request.method = "GET"
+
+        error = ValidationError("Test validation error")
+
+        response = await handle_domain_error(mock_request, error)
+
+        assert response.status_code == 422
+        assert response.body is not None
+
+    @pytest.mark.anyio
+    async def test_handle_domain_error_maps_status_codes_correctly(self) -> None:
+        """handle_domain_error maps error codes to correct HTTP status codes."""
+        mock_request = Mock(spec=Request)
+        mock_request.url.path = "/test"
+        mock_request.method = "GET"
+
+        # Test different error types
+        test_cases = [
+            (ValidationError("test"), 422),
+            (NotFoundError("Car", "123"), 404),
+            (ConflictError("test"), 409),
+            (UnauthorizedError("test"), 401),
+            (ForbiddenError("test"), 403),
+            (InternalError("test"), 500),
+        ]
+
+        with patch("kavak_lite.entrypoints.http.exception_handlers.logger"):
+            for error, expected_status in test_cases:
+                response = await handle_domain_error(mock_request, error)
+                assert response.status_code == expected_status
+
+    @pytest.mark.anyio
+    async def test_handle_domain_error_unknown_code_defaults_to_400(self) -> None:
+        """Unknown error codes default to 400 Bad Request."""
+        mock_request = Mock(spec=Request)
+        mock_request.url.path = "/test"
+        mock_request.method = "GET"
+
+        # Create a custom DomainError with unknown code
+        error = DomainError(message="Unknown error", error_code="UNKNOWN_CODE")
+
+        response = await handle_domain_error(mock_request, error)
+
+        assert response.status_code == 400
+
+    @pytest.mark.anyio
+    async def test_handle_domain_error_logs_500_errors(self) -> None:
+        """500-level errors are logged with error level."""
+        mock_request = Mock(spec=Request)
+        mock_request.url.path = "/test"
+        mock_request.method = "GET"
+
+        error = InternalError("Internal error occurred")
+
+        with patch("kavak_lite.entrypoints.http.exception_handlers.logger") as mock_logger:
+            await handle_domain_error(mock_request, error)
+
+            # Verify error was logged at error level
+            mock_logger.error.assert_called_once()
+            call_args = mock_logger.error.call_args
+            assert "Domain error occurred" in call_args[0]
+
+    @pytest.mark.anyio
+    async def test_handle_domain_error_logs_400_errors_at_info_level(self) -> None:
+        """400-level errors are logged at info level."""
+        mock_request = Mock(spec=Request)
+        mock_request.url.path = "/test"
+        mock_request.method = "GET"
+
+        error = ValidationError("Validation failed")
+
+        with patch("kavak_lite.entrypoints.http.exception_handlers.logger") as mock_logger:
+            await handle_domain_error(mock_request, error)
+
+            # Verify error was logged at info level
+            mock_logger.info.assert_called_once()
+            call_args = mock_logger.info.call_args
+            assert "Client error" in call_args[0]
+
+    @pytest.mark.anyio
+    async def test_handle_domain_error_includes_field_errors(self) -> None:
+        """handle_domain_error includes field errors when present."""
+        mock_request = Mock(spec=Request)
+        mock_request.url.path = "/test"
+        mock_request.method = "GET"
+
+        error = ValidationError(
+            errors=[{"field": "name", "message": "Required", "code": "REQUIRED"}]
+        )
+
+        response = await handle_domain_error(mock_request, error)
+
+        # Parse response body
+        import json
+
+        body = json.loads(response.body)
+
+        assert "errors" in body
+        assert len(body["errors"]) == 1
+        assert body["errors"][0]["field"] == "name"
+
+
+class TestHandleRequestValidationErrorDirectly:
+    """Tests for handle_request_validation_error function directly."""
+
+    @pytest.mark.anyio
+    async def test_handle_request_validation_error_returns_422(self) -> None:
+        """handle_request_validation_error returns 422 status."""
+        mock_request = Mock(spec=Request)
+        mock_request.url.path = "/test"
+        mock_request.method = "GET"
+
+        # Create a mock Pydantic validation error
+        pydantic_error = PydanticValidationError.from_exception_data(
+            "ValidationError",
+            [
+                {
+                    "type": "missing",
+                    "loc": ("body", "name"),
+                    "msg": "Field required",
+                    "input": {},
+                }
+            ],
+        )
+        exc = RequestValidationError(errors=pydantic_error.errors())
+
+        response = await handle_request_validation_error(mock_request, exc)
+
+        assert response.status_code == 422
+
+    @pytest.mark.anyio
+    async def test_handle_request_validation_error_filters_body_prefix(self) -> None:
+        """Field paths filter out 'body' and 'query' prefixes."""
+        mock_request = Mock(spec=Request)
+        mock_request.url.path = "/test"
+        mock_request.method = "POST"
+
+        pydantic_error = PydanticValidationError.from_exception_data(
+            "ValidationError",
+            [
+                {
+                    "type": "missing",
+                    "loc": ("body", "user", "name"),
+                    "msg": "Field required",
+                    "input": {},
+                }
+            ],
+        )
+        exc = RequestValidationError(errors=pydantic_error.errors())
+
+        response = await handle_request_validation_error(mock_request, exc)
+
+        import json
+
+        body = json.loads(response.body)
+
+        # Should have "user.name", not "body.user.name"
+        assert body["errors"][0]["field"] == "user.name"
+
+    @pytest.mark.anyio
+    async def test_handle_request_validation_error_logs_errors(self) -> None:
+        """Request validation errors are logged at info level."""
+        mock_request = Mock(spec=Request)
+        mock_request.url.path = "/test"
+        mock_request.method = "GET"
+
+        pydantic_error = PydanticValidationError.from_exception_data(
+            "ValidationError",
+            [
+                {
+                    "type": "missing",
+                    "loc": ("query", "limit"),
+                    "msg": "Field required",
+                    "input": {},
+                }
+            ],
+        )
+        exc = RequestValidationError(errors=pydantic_error.errors())
+
+        with patch("kavak_lite.entrypoints.http.exception_handlers.logger") as mock_logger:
+            await handle_request_validation_error(mock_request, exc)
+
+            mock_logger.info.assert_called_once()
+            call_args = mock_logger.info.call_args
+            assert "Request validation error" in call_args[0]
+
+
+class TestHandleValueErrorDirectly:
+    """Tests for handle_value_error function directly."""
+
+    @pytest.mark.anyio
+    async def test_handle_value_error_returns_422(self) -> None:
+        """handle_value_error returns 422 status."""
+        mock_request = Mock(spec=Request)
+        mock_request.url.path = "/test"
+        mock_request.method = "GET"
+
+        error = ValueError("Invalid decimal value")
+
+        response = await handle_value_error(mock_request, error)
+
+        assert response.status_code == 422
+
+    @pytest.mark.anyio
+    async def test_handle_value_error_includes_error_message(self) -> None:
+        """handle_value_error includes error message in response."""
+        mock_request = Mock(spec=Request)
+        mock_request.url.path = "/test"
+        mock_request.method = "GET"
+
+        error = ValueError("Invalid format")
+
+        response = await handle_value_error(mock_request, error)
+
+        import json
+
+        body = json.loads(response.body)
+
+        assert body["detail"] == "Invalid format"
+        assert body["code"] == "INVALID_VALUE"
+
+    @pytest.mark.anyio
+    async def test_handle_value_error_logs_at_info_level(self) -> None:
+        """ValueError is logged at info level."""
+        mock_request = Mock(spec=Request)
+        mock_request.url.path = "/test"
+        mock_request.method = "GET"
+
+        error = ValueError("Test error")
+
+        with patch("kavak_lite.entrypoints.http.exception_handlers.logger") as mock_logger:
+            await handle_value_error(mock_request, error)
+
+            mock_logger.info.assert_called_once()
+            call_args = mock_logger.info.call_args
+            assert "Value error" in call_args[0]
+
+
+class TestHandleUnexpectedErrorDirectly:
+    """Tests for handle_unexpected_error function directly."""
+
+    @pytest.mark.anyio
+    async def test_handle_unexpected_error_returns_500(self) -> None:
+        """handle_unexpected_error returns 500 status."""
+        mock_request = Mock(spec=Request)
+        mock_request.url.path = "/test"
+        mock_request.method = "GET"
+
+        error = RuntimeError("Unexpected error")
+
+        with patch("kavak_lite.entrypoints.http.exception_handlers.logger"):
+            response = await handle_unexpected_error(mock_request, error)
+
+        assert response.status_code == 500
+
+    @pytest.mark.anyio
+    async def test_handle_unexpected_error_returns_generic_message(self) -> None:
+        """Unexpected errors return generic message (no details leaked)."""
+        mock_request = Mock(spec=Request)
+        mock_request.url.path = "/test"
+        mock_request.method = "GET"
+
+        error = RuntimeError("Internal implementation detail")
+
+        with patch("kavak_lite.entrypoints.http.exception_handlers.logger"):
+            response = await handle_unexpected_error(mock_request, error)
+
+        import json
+
+        body = json.loads(response.body)
+
+        # Should return generic message, not the actual error
+        assert body["detail"] == "An unexpected error occurred"
+        assert body["code"] == "INTERNAL_ERROR"
+        assert "Internal implementation detail" not in body["detail"]
+
+    @pytest.mark.anyio
+    async def test_handle_unexpected_error_logs_with_traceback(self) -> None:
+        """Unexpected errors are logged with full traceback."""
+        mock_request = Mock(spec=Request)
+        mock_request.url.path = "/test"
+        mock_request.method = "GET"
+
+        error = RuntimeError("Test error")
+
+        with patch("kavak_lite.entrypoints.http.exception_handlers.logger") as mock_logger:
+            await handle_unexpected_error(mock_request, error)
+
+            # Verify error was logged with exc_info
+            mock_logger.error.assert_called_once()
+            call_args = mock_logger.error.call_args
+            assert "Unexpected error occurred" in call_args[0]
+            assert call_args[1]["exc_info"] == error
+
+
+class TestRegisterExceptionHandlers:
+    """Tests for register_exception_handlers function."""
+
+    def test_register_exception_handlers_adds_all_handlers(self) -> None:
+        """register_exception_handlers adds all exception handlers to app."""
+        app = FastAPI()
+
+        with patch.object(app, "add_exception_handler") as mock_add_handler:
+            register_exception_handlers(app)
+
+            # Verify add_exception_handler was called for each exception type
+            assert mock_add_handler.call_count == 4
+
+            # Verify correct exception types were registered
+            calls = mock_add_handler.call_args_list
+            exception_types = [call[0][0] for call in calls]
+
+            assert DomainError in exception_types
+            assert RequestValidationError in exception_types
+            assert ValueError in exception_types
+            assert Exception in exception_types
+
+    def test_register_exception_handlers_logs_success(self) -> None:
+        """register_exception_handlers logs successful registration."""
+        app = FastAPI()
+
+        with patch("kavak_lite.entrypoints.http.exception_handlers.logger") as mock_logger:
+            register_exception_handlers(app)
+
+            mock_logger.info.assert_called_once_with("Exception handlers registered successfully")
+
+    def test_register_exception_handlers_actually_registers(self) -> None:
+        """Handlers registered by register_exception_handlers actually work."""
+        app = FastAPI()
+        register_exception_handlers(app)
+
+        @app.get("/test")
+        def test_route() -> None:
+            raise ValidationError("Test error")
+
+        client = TestClient(app, raise_server_exceptions=False)
+        response = client.get("/test")
+
+        # Verify the handler actually works
+        assert response.status_code == 422
+        assert response.json()["code"] == "VALIDATION_ERROR"
+
+
+class TestLoggingBehavior:
+    """Tests for logging behavior across different error types."""
+
+    @pytest.mark.anyio
+    async def test_validation_errors_do_not_log_at_error_level(self) -> None:
+        """Validation errors (expected) don't log at error level."""
+        mock_request = Mock(spec=Request)
+        mock_request.url.path = "/test"
+        mock_request.method = "GET"
+
+        error = ValidationError("Expected validation error")
+
+        with patch("kavak_lite.entrypoints.http.exception_handlers.logger") as mock_logger:
+            await handle_domain_error(mock_request, error)
+
+            # Should log at info, not error
+            mock_logger.error.assert_not_called()
+            mock_logger.info.assert_called_once()
+
+    @pytest.mark.anyio
+    async def test_internal_errors_log_context(self) -> None:
+        """Internal errors log full context for debugging."""
+        mock_request = Mock(spec=Request)
+        mock_request.url.path = "/api/cars"
+        mock_request.method = "POST"
+
+        error = InternalError("Database connection failed")
+
+        with patch("kavak_lite.entrypoints.http.exception_handlers.logger") as mock_logger:
+            await handle_domain_error(mock_request, error)
+
+            # Verify context was logged
+            call_kwargs = mock_logger.error.call_args[1]
+            extra = call_kwargs["extra"]
+
+            assert extra["path"] == "/api/cars"
+            assert extra["method"] == "POST"
+            assert extra["error_code"] == "INTERNAL_ERROR"

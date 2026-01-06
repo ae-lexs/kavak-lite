@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
+from uuid import UUID
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -70,6 +71,23 @@ class PostgresCarCatalogRepository(CarCatalogRepository):
 
         return SearchResult(cars=cars, total_count=total_count)
 
+    def get_by_id(self, car_id: str) -> Car | None:
+        """
+        Get car by ID.
+
+        Args:
+            car_id: Car ID (expected to be a valid UUID string)
+
+        Returns:
+            Car entity if found, None otherwise
+        """
+        try:
+            query = select(CarRow).where(CarRow.id == UUID(car_id))
+            row = self._session.execute(query).scalar_one_or_none()
+            return self._to_domain(row) if row else None
+        except ValueError:  # Invalid UUID format
+            return None
+
     def _build_query(self, filters: CatalogFilters) -> Select[tuple[CarRow]]:
         """
         Build SQLAlchemy query with filters applied.
@@ -120,4 +138,11 @@ class PostgresCarCatalogRepository(CarCatalogRepository):
             model=row.model,
             year=row.year,
             price=row.price,  # Already Decimal from NUMERIC column
+            trim=row.trim,
+            mileage_km=row.milleage_km,  # Note: Database has typo (milleage_km)
+            transmission=row.transmission,
+            fuel_type=row.fuel_type,
+            body_type=row.body_type,
+            location=row.location,
+            url=row.url,
         )

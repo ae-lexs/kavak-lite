@@ -85,6 +85,13 @@ class CatalogSearchMapper:
             model=car.model,
             year=car.year,
             price=str(car.price),  # Decimal → str at boundary
+            trim=car.trim,
+            mileage_km=car.mileage_km,
+            transmission=car.transmission,
+            fuel_type=car.fuel_type,
+            body_type=car.body_type,
+            location=car.location,
+            url=car.url,
         )
 
     @staticmethod

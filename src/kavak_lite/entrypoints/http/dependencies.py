@@ -17,6 +17,7 @@ from kavak_lite.adapters.postgres_car_catalog_repository import (
 )
 from kavak_lite.infra.db.session import get_session
 from kavak_lite.use_cases.calculate_financing_plan import CalculateFinancingPlan
+from kavak_lite.use_cases.get_car_by_id import GetCarById
 from kavak_lite.use_cases.search_car_catalog import SearchCarCatalog
 
 
@@ -59,6 +60,25 @@ def get_search_catalog_use_case(db: Session = Depends(get_db)) -> SearchCarCatal
     """
     repository = PostgresCarCatalogRepository(session=db)
     return SearchCarCatalog(car_catalog_repository=repository)
+
+
+def get_get_car_by_id_use_case(db: Session = Depends(get_db)) -> GetCarById:
+    """
+    Factory function that returns a configured GetCarById use case.
+
+    This function is called per-request, ensuring each request gets:
+    - Fresh repository instance
+    - Fresh use case instance
+    - Isolated database session
+
+    Args:
+        db: Database session (injected by FastAPI via Depends(get_db))
+
+    Returns:
+        GetCarById: Configured use case instance
+    """
+    repository = PostgresCarCatalogRepository(session=db)
+    return GetCarById(car_catalog_repository=repository)
 
 
 def get_calculate_financing_plan_use_case() -> CalculateFinancingPlan:

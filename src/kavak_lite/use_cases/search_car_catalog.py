@@ -33,7 +33,7 @@ class SearchCarCatalog:
     """
 
     def __init__(self, car_catalog_repository: CarCatalogRepository) -> None:
-        self._car_catalog_repository = car_catalog_repository
+        self._repository = car_catalog_repository
 
     def execute(self, request: SearchCarCatalogRequest) -> SearchCarCatalogResponse:
         """
@@ -56,7 +56,7 @@ class SearchCarCatalog:
         request.filters.validate()
         request.paging.validate()
 
-        result = self._car_catalog_repository.search(
+        result = self._repository.search(
             filters=request.filters,
             paging=request.paging,
         )

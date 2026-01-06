@@ -356,6 +356,68 @@ def test_to_car_response_handles_whole_numbers() -> None:
     assert Decimal(result.price) == Decimal("40000.00")
 
 
+def test_to_car_response_maps_all_fields_with_extended_car() -> None:
+    """Mapper converts all fields from extended Car entity."""
+    car = Car(
+        id="550e8400-e29b-41d4-a716-446655440000",
+        make="Toyota",
+        model="Corolla",
+        year=2020,
+        price=Decimal("25000.00"),
+        trim="XLE",
+        mileage_km=50000,
+        transmission="Automático",
+        fuel_type="Gasolina",
+        body_type="Sedán",
+        location="CDMX",
+        url="https://kavak.com/mx/toyota/corolla/2020",
+    )
+
+    result = CatalogSearchMapper.to_car_response(car)
+
+    assert isinstance(result, CarResponseDTO)
+    assert result.id == "550e8400-e29b-41d4-a716-446655440000"
+    assert result.brand == "Toyota"
+    assert result.model == "Corolla"
+    assert result.year == 2020
+    assert result.price == "25000.00"
+    assert result.trim == "XLE"
+    assert result.mileage_km == 50000
+    assert result.transmission == "Automático"
+    assert result.fuel_type == "Gasolina"
+    assert result.body_type == "Sedán"
+    assert result.location == "CDMX"
+    assert result.url == "https://kavak.com/mx/toyota/corolla/2020"
+
+
+def test_to_car_response_handles_optional_fields_none() -> None:
+    """Mapper handles None values for optional fields."""
+    car = Car(
+        id="1",
+        make="Honda",
+        model="Civic",
+        year=2021,
+        price=Decimal("30000.00"),
+        # All optional fields as None (default)
+    )
+
+    result = CatalogSearchMapper.to_car_response(car)
+
+    assert isinstance(result, CarResponseDTO)
+    assert result.id == "1"
+    assert result.brand == "Honda"
+    assert result.model == "Civic"
+    assert result.year == 2021
+    assert result.price == "30000.00"
+    assert result.trim is None
+    assert result.mileage_km is None
+    assert result.transmission is None
+    assert result.fuel_type is None
+    assert result.body_type is None
+    assert result.location is None
+    assert result.url is None
+
+
 # ==============================================================================
 # to_response() - Domain Result → Response DTO with Pagination
 # ==============================================================================

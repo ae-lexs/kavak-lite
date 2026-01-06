@@ -124,6 +124,7 @@ The project uses **PostgreSQL** with **Alembic** for schema migrations.
 | `make db-new` | Create new migration (autogenerate) |
 | `make db-sql` | Show SQL for upgrade (dry-run) |
 | `make db-shell` | Open psql shell in postgres container |
+| `make db-seed` | Seed database with 50 sample cars (idempotent) |
 
 ### Connection Details
 

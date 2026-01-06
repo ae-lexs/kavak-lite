@@ -1,6 +1,6 @@
 SHELL := /bin/sh
 
-.PHONY: help build up down logs ps sh lock sync test test-file test-coverage lint lint-fix typecheck fmt check clean db-status db-history db-up db-down db-base db-new db-sql db-shell
+.PHONY: help build up down logs ps sh lock sync test test-file test-coverage lint lint-fix typecheck fmt check clean db-status db-history db-up db-down db-base db-new db-sql db-shell db-seed
 
 help:
 	@echo "kavak-lite commands:"
@@ -31,6 +31,7 @@ help:
 	@echo "  make db-new      Create new migration (autogenerate)"
 	@echo "  make db-sql      Show SQL for upgrade (dry-run)"
 	@echo "  make db-shell    Open psql shell in postgres container"
+	@echo "  make db-seed     Seed database with 50 sample cars (idempotent)"
 
 build:
 	docker compose build
@@ -112,3 +113,6 @@ db-sql:
 
 db-shell:
 	docker compose exec postgres psql -U kavak -d kavak_lite
+
+db-seed:
+	docker compose run --rm api uv run python scripts/seed_cars.py

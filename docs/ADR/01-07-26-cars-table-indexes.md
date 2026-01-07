@@ -110,17 +110,31 @@ CREATE INDEX CONCURRENTLY idx_cars_make_lower_price ON cars (LOWER(make), price)
 
 ### Implementation Strategy
 
-**CONCURRENTLY for zero-downtime:**
-- All indexes created with `CREATE INDEX CONCURRENTLY`
-- Prevents `ACCESS EXCLUSIVE` locks that would block queries
-- Safe for production deployment without downtime
-- Trade-off: Slower index creation (requires two table scans vs one)
+**Standard index creation (not CONCURRENTLY):**
+- Indexes created with standard `CREATE INDEX` (not CONCURRENTLY)
+- Brief `ShareLock` during creation (allows reads, blocks writes)
+- For 50-car dataset: <100ms lock time (negligible)
+- For large production databases: Can create indexes manually with CONCURRENTLY before deployment if zero-downtime is required
 
 **Alembic migration approach:**
 - Separate migration file (not modifying original table creation)
 - Explicit index naming convention: `idx_{table}_{columns}_{function}`
-- Reversible: `downgrade()` drops indexes using `CONCURRENTLY`
+- Reversible: `downgrade()` drops indexes
 - Links to existing migration: `down_revision = 'd049065b730f'`
+
+**Note on CONCURRENTLY:**
+`CREATE INDEX CONCURRENTLY` cannot run inside Alembic's transaction blocks. For production deployments on large databases requiring zero-downtime, create indexes manually with CONCURRENTLY before deploying the migration:
+
+```sql
+-- Run manually on production before deployment
+CREATE INDEX CONCURRENTLY idx_cars_make_lower ON cars (LOWER(make));
+CREATE INDEX CONCURRENTLY idx_cars_model_lower ON cars (LOWER(model));
+CREATE INDEX CONCURRENTLY idx_cars_year ON cars (year);
+CREATE INDEX CONCURRENTLY idx_cars_price ON cars (price);
+CREATE INDEX CONCURRENTLY idx_cars_make_lower_price ON cars (LOWER(make), price);
+```
+
+Then skip the migration's index creation since they already exist.
 
 ## Alternatives Considered
 
@@ -249,9 +263,9 @@ WHERE year >= 2020;
 - Index scans scale logarithmically (O(log n)) vs linear (O(n))
 
 **Production Readiness:**
-- `CONCURRENTLY` enables zero-downtime deployments
-- No table locks during index creation
-- Safe for production databases under load
+- Brief table locks during index creation (<100ms for small datasets)
+- For zero-downtime on large databases: create indexes manually with CONCURRENTLY first
+- Standard migration approach compatible with Alembic transactions
 
 **Developer Productivity:**
 - Repository queries work efficiently without code changes
@@ -333,7 +347,6 @@ def upgrade() -> None:
         'cars',
         [sa.text('LOWER(make)')],
         unique=False,
-        postgresql_concurrently=True,
     )
 
     op.create_index(
@@ -341,7 +354,6 @@ def upgrade() -> None:
         'cars',
         [sa.text('LOWER(model)')],
         unique=False,
-        postgresql_concurrently=True,
     )
 
     # B-tree indexes for range queries
@@ -350,7 +362,6 @@ def upgrade() -> None:
         'cars',
         ['year'],
         unique=False,
-        postgresql_concurrently=True,
     )
 
     op.create_index(
@@ -358,7 +369,6 @@ def upgrade() -> None:
         'cars',
         ['price'],
         unique=False,
-        postgresql_concurrently=True,
     )
 
     # Composite index for common filter combination
@@ -367,26 +377,25 @@ def upgrade() -> None:
         'cars',
         [sa.text('LOWER(make)'), 'price'],
         unique=False,
-        postgresql_concurrently=True,
     )
 
 def downgrade() -> None:
     """Drop indexes in reverse order."""
-    op.drop_index('idx_cars_make_lower_price', table_name='cars', postgresql_concurrently=True)
-    op.drop_index('idx_cars_price', table_name='cars', postgresql_concurrently=True)
-    op.drop_index('idx_cars_year', table_name='cars', postgresql_concurrently=True)
-    op.drop_index('idx_cars_model_lower', table_name='cars', postgresql_concurrently=True)
-    op.drop_index('idx_cars_make_lower', table_name='cars', postgresql_concurrently=True)
+    op.drop_index('idx_cars_make_lower_price', table_name='cars')
+    op.drop_index('idx_cars_price', table_name='cars')
+    op.drop_index('idx_cars_year', table_name='cars')
+    op.drop_index('idx_cars_model_lower', table_name='cars')
+    op.drop_index('idx_cars_make_lower', table_name='cars')
 ```
 
 **Key implementation details:**
 
 1. **`sa.text('LOWER(make)')`** - Required for functional indexes. SQLAlchemy's `create_index()` expects column names; expressions must be wrapped in `sa.text()`.
 
-2. **`postgresql_concurrently=True`** - Critical for production safety:
-   - Builds index without blocking reads/writes
-   - Requires two table scans (slower) but zero downtime
-   - Cannot run in transaction (Alembic handles this automatically)
+2. **Standard index creation** - Uses regular `CREATE INDEX` (not CONCURRENTLY):
+   - Runs within Alembic's transaction
+   - Brief table locks (ShareLock: allows reads, blocks writes)
+   - Fast for small datasets (<100ms for 50 cars)
 
 3. **Drop order** - Downgrade drops composite index first, then individual indexes. Prevents dangling references.
 

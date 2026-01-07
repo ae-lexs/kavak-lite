@@ -635,7 +635,7 @@ def test_get_car_by_id_success(app: FastAPI, client: TestClient) -> None:
         fuel_type="Gasolina",
         body_type="Sedán",
         location="CDMX",
-        url="https://kavak.com/mx/toyota/corolla/2020",
+        url="https://kavak-lite.com/toyota/corolla/2020",
     )
 
     mock_use_case = Mock()
@@ -659,7 +659,7 @@ def test_get_car_by_id_success(app: FastAPI, client: TestClient) -> None:
     assert data["fuel_type"] == "Gasolina"
     assert data["body_type"] == "Sedán"
     assert data["location"] == "CDMX"
-    assert data["url"] == "https://kavak.com/mx/toyota/corolla/2020"
+    assert data["url"] == "https://kavak-lite.com/toyota/corolla/2020"
 
     # Verify use case was called with correct car_id
     mock_use_case.execute.assert_called_once()

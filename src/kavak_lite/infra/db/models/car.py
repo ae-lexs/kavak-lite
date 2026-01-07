@@ -28,7 +28,7 @@ class CarRow(Base):
         Numeric(precision=12, scale=2), nullable=False
     )  # $9,999,999,999.99
 
-    milleage_km: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    mileage_km: Mapped[int | None] = mapped_column(Integer, nullable=True)
     transmission: Mapped[str | None] = mapped_column(String(20), nullable=True)
     fuel_type: Mapped[str | None] = mapped_column(String(20), nullable=True)
     body_type: Mapped[str | None] = mapped_column(String(30), nullable=True)

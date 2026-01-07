@@ -370,7 +370,7 @@ def test_to_car_response_maps_all_fields_with_extended_car() -> None:
         fuel_type="Gasolina",
         body_type="Sedán",
         location="CDMX",
-        url="https://kavak.com/mx/toyota/corolla/2020",
+        url="https://kavak-lite.com/toyota/corolla/2020",
     )
 
     result = CatalogSearchMapper.to_car_response(car)
@@ -387,7 +387,7 @@ def test_to_car_response_maps_all_fields_with_extended_car() -> None:
     assert result.fuel_type == "Gasolina"
     assert result.body_type == "Sedán"
     assert result.location == "CDMX"
-    assert result.url == "https://kavak.com/mx/toyota/corolla/2020"
+    assert result.url == "https://kavak-lite.com/toyota/corolla/2020"
 
 
 def test_to_car_response_handles_optional_fields_none() -> None:

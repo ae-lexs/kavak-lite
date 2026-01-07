@@ -233,7 +233,7 @@ def generate_car() -> CarRow:
     location = random.choice(LOCATIONS)
 
     # Build URL (example format)
-    url = f"https://kavak.com/mx/{make.lower().replace(' ', '-')}/{model.lower().replace(' ', '-')}/{year}"
+    url = f"https://kavak-lite.com/{make.lower().replace(' ', '-')}/{model.lower().replace(' ', '-')}/{year}"
 
     return CarRow(
         make=make,

@@ -219,7 +219,7 @@ def test_execute_preserves_car_data(mock_repository: Mock) -> None:
         fuel_type="Gasolina",
         body_type="Sedán",
         location="Monterrey",
-        url="https://kavak.com/mx/honda/civic/2021",
+        url="https://kavak-lite.com/honda/civic/2021",
     )
     mock_repository.get_by_id.return_value = car_with_all_fields
     use_case = GetCarById(car_catalog_repository=mock_repository)
@@ -239,4 +239,4 @@ def test_execute_preserves_car_data(mock_repository: Mock) -> None:
     assert result.car.fuel_type == "Gasolina"
     assert result.car.body_type == "Sedán"
     assert result.car.location == "Monterrey"
-    assert result.car.url == "https://kavak.com/mx/honda/civic/2021"
+    assert result.car.url == "https://kavak-lite.com/honda/civic/2021"

@@ -120,7 +120,7 @@ def get_cars(
                         "fuel_type": "Gasolina",
                         "body_type": "Sedán",
                         "location": "CDMX",
-                        "url": "https://kavak.com/mx/toyota/corolla/2020",
+                        "url": "https://kavak-lite.com/toyota/corolla/2020",
                     }
                 }
             },

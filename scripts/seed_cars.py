@@ -240,7 +240,7 @@ def generate_car() -> CarRow:
         model=model,
         year=year,
         price=price,
-        milleage_km=mileage,
+        mileage_km=mileage,
         transmission=transmission,
         fuel_type=fuel_type,
         body_type=body_type,

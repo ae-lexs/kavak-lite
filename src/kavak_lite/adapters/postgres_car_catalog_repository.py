@@ -139,7 +139,7 @@ class PostgresCarCatalogRepository(CarCatalogRepository):
             year=row.year,
             price=row.price,  # Already Decimal from NUMERIC column
             trim=row.trim,
-            mileage_km=row.milleage_km,  # Note: Database has typo (milleage_km)
+            mileage_km=row.mileage_km,
             transmission=row.transmission,
             fuel_type=row.fuel_type,
             body_type=row.body_type,
